@@ -71,7 +71,7 @@ func main() {
 			if err = cli.Clear(project); err != nil {
 				prtg.Error(err)
 			}
-			if err = cli.Trigger(project); err != nil {
+			if _, err = cli.Trigger(project); err != nil {
 				prtg.Error(err)
 			}
 		}

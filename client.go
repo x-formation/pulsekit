@@ -1,33 +1,19 @@
 package pulse
 
-import "github.com/kolo/xmlrpc"
+import (
+	"errors"
+	"strconv"
 
-// AgentStatus TODO(rjeczalik): document
-type AgentStatus string
-
-const (
-	AgentOffline  AgentStatus = "offline"
-	AgentSync     AgentStatus = "Synchronizing"
-	AgentIdle     AgentStatus = "idle"
-	AgentBuilding AgentStatus = "building"
-	AgentDisabled AgentStatus = "disabled"
+	"github.com/kolo/xmlrpc"
 )
-
-// Agent TODO(rjeczalik): document
-type Agent struct {
-	Name   string
-	Status AgentStatus `xmlrpc:"status"`
-	Host   string      `xmlrpc:"location"`
-}
-
-// String TODO(rjeczalik): document
-func (a Agent) String() string { return a.Name + "@" + a.Host }
 
 // Client TODO(rjeczalik): document
 type Client interface {
+	BuildID(reqid string) (int64, error)
+	BuildResult(project string, id int64) ([]BuildResult, error)
 	Close() error
 	Clear(project string) error
-	Trigger(project string) error
+	Trigger(project string) ([]string, error)
 	Projects() ([]string, error)
 	Agents() ([]Agent, error)
 }
@@ -49,6 +35,33 @@ func NewClient(url, user, pass string) (Client, error) {
 	return c, nil
 }
 
+// BuildID TODO(rjeczalik): document
+func (c *client) BuildID(reqid string) (int64, error) {
+	// TODO(rjeczalik): Extend Client interface with SetDeadline() method which
+	//                  will configure both timeouts - for Pulse API and for
+	//                  *rpc.Client from net/rpc.
+	timeout, rep := 15*1000, &BuildRequestStatus{}
+	err := c.rpc.Call("RemoteApi.waitForBuildRequestToBeActivated",
+		[]interface{}{c.tok, reqid, timeout}, &rep)
+	if err != nil {
+		return 0, err
+	}
+	if rep.Status == BuildUnhandled || rep.Status == BuildQueued {
+		return 0, errors.New("pulse: requesting build ID has timed out")
+	}
+	return strconv.ParseInt(rep.ID, 10, 64)
+}
+
+// BuildResult TODO(rjeczalik): document
+func (c *client) BuildResult(project string, id int64) ([]BuildResult, error) {
+	var build []BuildResult
+	err := c.rpc.Call("RemoteApi.getBuild", []interface{}{c.tok, project, int(id)}, &build)
+	if err != nil {
+		return nil, err
+	}
+	return build, nil
+}
+
 // Close TODO(rjeczalik): document
 func (c *client) Close() error {
 	if err := c.rpc.Call("RemoteApi.logout", c.tok, nil); err != nil {
@@ -63,8 +76,14 @@ func (c *client) Clear(project string) error {
 }
 
 // Trigger TODO(rjeczalik): document
-func (c *client) Trigger(project string) error {
-	return c.rpc.Call("RemoteApi.triggerBuild", []interface{}{c.tok, project}, nil)
+func (c *client) Trigger(project string) (id []string, err error) {
+	// TODO(rjeczalik): Use TriggerOptions struct instead after kolo/xmlrpc
+	//                  supports maps.
+	req := struct {
+		R bool `xmlrpc:"rebuild"`
+	}{true}
+	err = c.rpc.Call("RemoteApi.triggerBuild", []interface{}{c.tok, project, req}, &id)
+	return
 }
 
 // Projects TODO(rjeczalik): document
