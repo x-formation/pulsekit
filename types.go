@@ -79,7 +79,9 @@ type CommandResult struct {
 
 // CommandResultProperties TODO(rjeczalik): document
 type CommandResultProperties struct {
-	Exit    int    `xmlrpc:"exit code"`
+	// TODO(rjeczalik): According to the API documentation Exit must be int,
+	//                  but Pulse sends it as string.
+	Exit    string `xmlrpc:"exit code"`
 	CmdLine string `xmlrpc:"command line"`
 	WorkDir string `xmlrpc:"working directory"`
 }

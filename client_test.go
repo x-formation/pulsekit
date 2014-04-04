@@ -1,6 +1,9 @@
 package pulse
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 const (
 	OkProject     = "Pulse CLI - Success"
@@ -12,6 +15,7 @@ func fixture(t *testing.T) Client {
 	if err != nil {
 		t.Fatalf("expected err to be nil, was %v instead", err)
 	}
+	t.Parallel()
 	return c
 }
 
@@ -53,22 +57,44 @@ func TestAgents(t *testing.T) {
 	}
 }
 
-func TestTriggerOk(t *testing.T) {
+func testBuild(t *testing.T, project string, ok bool) {
 	c := fixture(t)
-	reqid, err := c.Trigger(OkProject)
+	reqid, err := c.Trigger(project)
 	if err != nil {
-		t.Fatalf("error triggering build %q: %v", OkProject, err)
+		t.Fatalf("error triggering build %q: %v", project, err)
 	}
 	if len(reqid) != 1 {
 		t.Fatalf("invalid length of the trigger response: len(reqid)=%d", len(reqid))
 	}
-	_, err = c.BuildID(reqid[0])
+	id, err := c.BuildID(reqid[0])
 	if err != nil {
 		t.Fatalf("error requesting build ID: %v", err)
 	}
-	// TODO(rjeczalik): https://github.com/kolo/xmlrpc/issues/17#issuecomment-39439257
-	// _, err := c.BuildResult(OkProject, id)
-	// if err != nil {
-	//   t.Fatalf("error requesting build state: %v", err)
-	// }
+	done := c.WaitBuild(project, id)
+	select {
+	case <-done:
+		build, err := c.BuildResult(project, id)
+		if err != nil {
+			t.Fatalf("error requesting build state: %v", err)
+		}
+		if len(build) != 1 {
+			t.Errorf("expected len(build) to be 1, was %d instead", len(build))
+		}
+		if !build[0].Complete {
+			t.Errorf("expected project=%q build=%d to be completed", project, id)
+		}
+		if build[0].Success != ok {
+			t.Errorf("expected project=%q build=%d to be successful=%v", project, id, ok)
+		}
+	case <-time.After(time.Minute):
+		t.Errorf("timed out waiting for %q build %d to complete", project, id)
+	}
+}
+
+func TestBuildOk(t *testing.T) {
+	testBuild(t, OkProject, true)
+}
+
+func TestBuildBroken(t *testing.T) {
+	testBuild(t, BrokenProject, false)
 }

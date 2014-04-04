@@ -2,9 +2,14 @@ package pulse
 
 import (
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 )
+
+func init() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+}
 
 func TestFilter(t *testing.T) {
 	agents := [][]Agent{

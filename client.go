@@ -3,19 +3,21 @@ package pulse
 import (
 	"errors"
 	"strconv"
+	"time"
 
 	"github.com/kolo/xmlrpc"
 )
 
 // Client TODO(rjeczalik): document
 type Client interface {
+	Agents() ([]Agent, error)
 	BuildID(reqid string) (int64, error)
 	BuildResult(project string, id int64) ([]BuildResult, error)
-	Close() error
 	Clear(project string) error
-	Trigger(project string) ([]string, error)
+	Close() error
 	Projects() ([]string, error)
-	Agents() ([]Agent, error)
+	Trigger(project string) ([]string, error)
+	WaitBuild(project string, id int64) <-chan struct{}
 }
 
 type client struct {
@@ -60,6 +62,37 @@ func (c *client) BuildResult(project string, id int64) ([]BuildResult, error) {
 		return nil, err
 	}
 	return build, nil
+}
+
+func (c *client) WaitBuild(project string, id int64) <-chan struct{} {
+	done, sleep := make(chan struct{}), 250*time.Millisecond
+	go func() {
+		build, retry := make([]BuildResult, 0), 3
+	WaitLoop:
+		for {
+			build = build[:0]
+			err := c.rpc.Call("RemoteApi.getBuild", []interface{}{c.tok, project,
+				int(id)}, &build)
+			if err != nil {
+				if retry > 0 {
+					retry -= 1
+					time.Sleep(sleep)
+					continue WaitLoop
+				}
+				close(done)
+				return
+			}
+			for i := range build {
+				if !build[i].Complete {
+					time.Sleep(sleep)
+					continue WaitLoop
+				}
+			}
+			close(done)
+			return
+		}
+	}()
+	return done
 }
 
 // Close TODO(rjeczalik): document
