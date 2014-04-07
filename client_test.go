@@ -73,21 +73,22 @@ func testBuild(t *testing.T, project string, ok bool) {
 	done := c.WaitBuild(project, id)
 	select {
 	case <-done:
-		build, err := c.BuildResult(project, id)
-		if err != nil {
-			t.Fatalf("error requesting build state: %v", err)
-		}
-		if len(build) != 1 {
-			t.Errorf("expected len(build) to be 1, was %d instead", len(build))
-		}
+	case <-time.After(time.Minute):
+	}
+	build, err := c.BuildResult(project, id)
+	if err != nil {
+		t.Fatalf("error requesting build state: %v", err)
+	}
+	if len(build) != 1 {
+		t.Errorf("expected len(build) to be 1, was %d instead", len(build))
+	}
+	if !Pending(build) {
 		if !build[0].Complete {
 			t.Errorf("expected project=%q build=%d to be completed", project, id)
 		}
 		if build[0].Success != ok {
 			t.Errorf("expected project=%q build=%d to be successful=%v", project, id, ok)
 		}
-	case <-time.After(time.Minute):
-		t.Errorf("timed out waiting for %q build %d to complete", project, id)
 	}
 }
 
