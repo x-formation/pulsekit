@@ -7,6 +7,16 @@ pulse
 
 Command-line tool for communicating with Zutubi Pulse server through its Remote API.
 
+#### Installation
+
+Just go get it:
+
+```
+~ $ go get github.com/x-formation/int-tools/pulse/cmd/pulsecli
+```
+
+Ensure you have `$GOPATH` set and `$GOBIN` (or `$GOPATH`/bin) is in your `$PATH`. Taking the oportunity you read this, I strongly encourage you to use [gvm](https://github.com/moovweb/gvm).
+
 #### Usage
 
 ```
