@@ -84,3 +84,11 @@ Windows 8.1 - 7@http://pulse-win-7:8090
 Windows 8.1 - 8@http://pulse-win-8:8090
 Windows 8.1 - 9@http://pulse-win-9:8090
 ```
+
+
+#### TODO
+
+* create project on JIRA to track the issues
+* session management (save encrypted user/pass to `~/.pulsecli` to spare the user effort typing it each time)
+* verbose logging, currently the output is PRTG-friendly, which should be made optional (e.g. using `--prtg` flag)
+* `cmd/pulseclid` daemon for watching builds, which will be used for `github.com` bot
