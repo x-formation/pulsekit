@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/x-formation/int-tools/pulse/pulsecli"
+	"github.com/x-formation/int-tools/pulseutil/pulsecli"
 )
 
 func main() {

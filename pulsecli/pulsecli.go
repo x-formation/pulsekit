@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/x-formation/int-tools/pulse"
-	"github.com/x-formation/int-tools/pulse/prtg"
+	"github.com/x-formation/int-tools/pulseutil"
+	"github.com/x-formation/int-tools/pulseutil/prtg"
 
 	"github.com/codegangsta/cli"
 	"gopkg.in/v1/yaml"
