@@ -34,35 +34,37 @@ COMMANDS:
    health	perform a health check
    projects	list all projcts
    agents	list all agents
+   status	list build status
    help, h	Shows a list of commands or help for one command
-
+   
 GLOBAL OPTIONS:
    --addr 'http://pulse/xmlrpc'	Pulse Remote API endpoint
    --user ''			Pulse user name
    --pass ''			Pulse user password
    --agent, -a '.*'		Agent name patter
    --project, -p '.*'		Project name pattern
+   --build, -b '0'		Build number
    --version, -v		print the version
    --help, -h			show help
 ```
 
 #### Examples
 
-* Performing a health check
+###### Performing a health check
 
 ```
 ~ $ pulsecli --user $USER --pass $PASS health
 0:0:OK
 ```
 
-* Triggering builds for all the projects
+###### Triggering builds for all the projects
 
 ```
 ~ $ pulsecli --user $USER --pass $PASS trigger
 0:0:OK
 ```
 
-* Triggering builds for all LM-X tiers
+###### Triggering builds for all LM-X tiers
 
 ```
 ~ $ pulsecli --user $USER --pass $PASS --project 'LM-X - Tier' trigger
@@ -85,6 +87,48 @@ Windows 8.1 - 8@http://pulse-win-8:8090
 Windows 8.1 - 9@http://pulse-win-9:8090
 ```
 
+###### Getting status of the `LM-X - Release Build - Tier 2` project
+
+The `--build` or `-b` flag expects either: 
+
+  * a real build number
+  * 0 which means latest build number
+```
+~ $ pulsecli --user $USER --pass $PASS -p 'LM-X - Release Build - Tier 2' -b 0 status
+LM-X - Release Build - Tier 2 (build 547):
+- id: 547
+  complete: true
+  end: {}
+  endunix: "1396963267179"
+  errors: 0
+  maturity: integration
+  owner: LM-X - Release Build - Tier 2
+  personal: false
+  pinned: false
+  progress: -1
+  project: LM-X - Release Build - Tier 2
+  revision: 887e88a5c4709e9bf260744d398d71dd7ef70050
+  reason: manual trigger by rjeczalik
+...
+```
+  * a negative number being an relative offset to the latest build number
+```
+~ $ pulsecli --user $USER --pass $PASS -p 'LM-X - Release Build - Tier 2' -b -10 status
+LM-X - Release Build - Tier 2 (build 537):
+- id: 537
+  complete: true
+  end: {}
+  endunix: "1396372083402"
+  errors: 8
+  maturity: integration
+  owner: LM-X - Release Build - Tier 2
+  personal: false
+  pinned: false
+  progress: -1
+  project: LM-X - Release Build - Tier 2
+  revision: 22fc614bd290041778ad1a69fc66c97841c77177
+...
+```
 
 #### TODO
 
