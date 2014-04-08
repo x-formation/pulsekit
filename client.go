@@ -15,6 +15,7 @@ type Client interface {
 	BuildResult(project string, id int64) ([]BuildResult, error)
 	Clear(project string) error
 	Close() error
+	LatestBuildResult(project string) ([]BuildResult, error)
 	Projects() ([]string, error)
 	Trigger(project string) ([]string, error)
 	WaitBuild(project string, id int64) <-chan struct{}
@@ -64,6 +65,17 @@ func (c *client) BuildResult(project string, id int64) ([]BuildResult, error) {
 	return build, nil
 }
 
+// LatestBuildResult TODO(rjeczalik): document
+func (c *client) LatestBuildResult(project string) ([]BuildResult, error) {
+	var build []BuildResult
+	err := c.rpc.Call("RemoteApi.getLatestBuildForProject", []interface{}{c.tok, project, true}, &build)
+	if err != nil {
+		return nil, err
+	}
+	return build, nil
+}
+
+// WaitBuild TODO(rjeczalik): document
 func (c *client) WaitBuild(project string, id int64) <-chan struct{} {
 	done, sleep := make(chan struct{}), 250*time.Millisecond
 	go func() {
