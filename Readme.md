@@ -1,5 +1,5 @@
-pulse
-=====
+pulseutil
+=========
 
 <img src="http://zutubi.com/site_media/images/zutubi.png" align="right"><p>Repository for tools / libraries being built around Zutubi Pulse for automation purposes. This most notable tools in this repository are:</p>
 
