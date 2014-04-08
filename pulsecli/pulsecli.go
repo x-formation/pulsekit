@@ -8,6 +8,7 @@ import (
 	"github.com/x-formation/int-tools/pulse/prtg"
 
 	"github.com/codegangsta/cli"
+	"gopkg.in/v1/yaml"
 )
 
 // New TODO(rjeczalik): document
@@ -17,6 +18,7 @@ type CLI struct {
 	c     pulse.Client
 	a     *regexp.Regexp
 	p     *regexp.Regexp
+	n     int64
 }
 
 // New TODO(rjeczalik): document
@@ -33,6 +35,7 @@ func New() *CLI {
 		cli.StringFlag{"pass", "", "Pulse user password"},
 		cli.StringFlag{"agent, a", ".*", "Agent name patter"},
 		cli.StringFlag{"project, p", ".*", "Project name pattern"},
+		cli.IntFlag{"build, b", 0, "Build number"},
 	}
 	cl.app.Commands = []cli.Command{{
 		Name:   "trigger",
@@ -50,6 +53,10 @@ func New() *CLI {
 		Name:   "agents",
 		Usage:  "list all agents",
 		Action: cl.Agents,
+	}, {
+		Name:   "status",
+		Usage:  "list build status",
+		Action: cl.Status,
 	}}
 	return cl
 }
@@ -61,13 +68,14 @@ func (cli *CLI) Init(ctx *cli.Context) {
 	if cli.c, err = pulse.NewClient(addr, user, pass); err != nil {
 		cli.Error(err)
 	}
-	a, p := ctx.GlobalString("agent"), ctx.GlobalString("project")
+	a, p, n := ctx.GlobalString("agent"), ctx.GlobalString("project"), ctx.GlobalInt("build")
 	if cli.a, err = regexp.Compile(a); err != nil {
 		cli.Error(err)
 	}
 	if cli.p, err = regexp.Compile(p); err != nil {
 		cli.Error(err)
 	}
+	cli.n = int64(n)
 }
 
 // Trigger TODO(rjeczalik): document
@@ -133,6 +141,52 @@ func (cli *CLI) Agents(ctx *cli.Context) {
 	for _, a := range a {
 		fmt.Printf("%+v\n", a)
 	}
+}
+
+// Status TODO(rjeczalik): document
+func (cli *CLI) Status(ctx *cli.Context) {
+	cli.Init(ctx)
+	p, err := cli.c.Projects()
+	if err != nil {
+		cli.Error(err)
+	}
+	m := make(map[string][]pulse.BuildResult)
+	for _, p := range p {
+		if !cli.p.MatchString(p) {
+			continue
+		}
+		var (
+			b []pulse.BuildResult
+			n = cli.n
+		)
+		if n > 0 {
+			b, err = cli.c.BuildResult(p, n)
+		} else {
+			b, err = cli.c.LatestBuildResult(p)
+			if err != nil {
+				cli.Error(err)
+			}
+			var max int64
+			for i := range b {
+				if b[i].ID > max {
+					max = b[i].ID
+				}
+			}
+			if cli.n < 0 {
+				b, err = cli.c.BuildResult(p, max-n)
+			}
+			n = max - n
+		}
+		if err != nil {
+			cli.Error(err)
+		}
+		m[fmt.Sprintf("%s (build %d)", p, n)] = b
+	}
+	y, err := yaml.Marshal(m)
+	if err != nil {
+		cli.Error(err)
+	}
+	fmt.Println(string(y))
 }
 
 // Run TODO(rjeczalik): document
