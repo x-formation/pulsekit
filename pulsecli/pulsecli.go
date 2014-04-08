@@ -173,9 +173,9 @@ func (cli *CLI) Status(ctx *cli.Context) {
 				}
 			}
 			if cli.n < 0 {
-				b, err = cli.c.BuildResult(p, max-n)
+				b, err = cli.c.BuildResult(p, max+n)
 			}
-			n = max - n
+			n = max + n
 		}
 		if err != nil {
 			cli.Error(err)
