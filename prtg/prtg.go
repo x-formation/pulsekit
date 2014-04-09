@@ -11,12 +11,12 @@ import (
 var output io.Writer = os.Stdout
 var exit func(int) = os.Exit
 
-func OK() {
-	fmt.Fprintf(output, "0:0:OK\n")
+func Out(_ ...interface{}) {
+	fmt.Fprintln(output, "0:0:OK")
 	exit(0)
 }
 
-func Error(args ...interface{}) {
+func Err(args ...interface{}) {
 	s, str := make([]string, 0, len(args)), ""
 	for _, arg := range args {
 		switch arg := arg.(type) {

@@ -2,6 +2,7 @@ package pulsecli
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 
 	"github.com/x-formation/int-tools/pulseutil"
@@ -11,21 +12,38 @@ import (
 	"gopkg.in/v1/yaml"
 )
 
+var defaultErr = func(args ...interface{}) {
+	if len(args) != 0 {
+		fmt.Fprintln(os.Stderr, args...)
+	}
+	os.Exit(1)
+}
+
+var defaultOut = func(args ...interface{}) {
+	if len(args) != 0 {
+		fmt.Println(args...)
+	}
+	os.Exit(0)
+}
+
 // New TODO(rjeczalik): document
 type CLI struct {
-	Error func(...interface{})
-	app   *cli.App
-	c     pulse.Client
-	a     *regexp.Regexp
-	p     *regexp.Regexp
-	n     int64
+	Err  func(...interface{})
+	Out  func(...interface{})
+	app  *cli.App
+	c    pulse.Client
+	a    *regexp.Regexp
+	p    *regexp.Regexp
+	n    int64
+	prtg bool
 }
 
 // New TODO(rjeczalik): document
 func New() *CLI {
 	cl := &CLI{
-		Error: prtg.Error,
-		app:   cli.NewApp(),
+		Err: defaultErr,
+		Out: defaultOut,
+		app: cli.NewApp(),
 	}
 	cl.app.Name, cl.app.Version = "pulsecli", "0.1.0"
 	cl.app.Usage = "a command-line client for a Pulse server"
@@ -36,6 +54,7 @@ func New() *CLI {
 		cli.StringFlag{"agent, a", ".*", "Agent name patter"},
 		cli.StringFlag{"project, p", ".*", "Project name pattern"},
 		cli.IntFlag{"build, b", 0, "Build number"},
+		cli.BoolFlag{"prtg", "PRTG-friendly output"},
 	}
 	cl.app.Commands = []cli.Command{{
 		Name:   "trigger",
@@ -63,17 +82,20 @@ func New() *CLI {
 
 // Init TODO(rjeczalik): document
 func (cli *CLI) Init(ctx *cli.Context) {
+	if ctx.GlobalBool("prtg") {
+		cli.Err, cli.Out = prtg.Err, prtg.Out
+	}
 	var err error
 	addr, user, pass := ctx.GlobalString("addr"), ctx.GlobalString("user"), ctx.GlobalString("pass")
 	if cli.c, err = pulse.NewClient(addr, user, pass); err != nil {
-		cli.Error(err)
+		cli.Err(err)
 	}
 	a, p, n := ctx.GlobalString("agent"), ctx.GlobalString("project"), ctx.GlobalInt("build")
 	if cli.a, err = regexp.Compile(a); err != nil {
-		cli.Error(err)
+		cli.Err(err)
 	}
 	if cli.p, err = regexp.Compile(p); err != nil {
-		cli.Error(err)
+		cli.Err(err)
 	}
 	cli.n = int64(n)
 }
@@ -83,20 +105,20 @@ func (cli *CLI) Trigger(ctx *cli.Context) {
 	cli.Init(ctx)
 	p, err := cli.c.Projects()
 	if err != nil {
-		cli.Error(err)
+		cli.Err(err)
 	}
 	for _, p := range p {
 		if !cli.p.MatchString(p) {
 			continue
 		}
 		if err = cli.c.Clear(p); err != nil {
-			cli.Error(err)
+			cli.Err(err)
 		}
 		if _, err = cli.c.Trigger(p); err != nil {
-			cli.Error(err)
+			cli.Err(err)
 		}
 	}
-	prtg.OK()
+	cli.Out()
 }
 
 // Health TODO(rjeczalik): document
@@ -104,19 +126,19 @@ func (cli *CLI) Health(ctx *cli.Context) {
 	cli.Init(ctx)
 	a, err := cli.c.Agents()
 	if err != nil {
-		cli.Error(err)
+		cli.Err(err)
 	}
 	if len(pulse.Filter(a, pulse.IsSync)) >= len(a)/2 {
-		cli.Error("Pulse Agents are hanging again!")
+		cli.Err("Pulse Agents are hanging again!")
 	}
 	if a = pulse.Filter(a, pulse.IsOffline); len(a) > 0 {
 		args := make([]interface{}, 0, len(a))
 		for i := range a {
 			args = append(args, a[i])
 		}
-		cli.Error(args...)
+		cli.Err(args...)
 	}
-	prtg.OK()
+	cli.Out()
 }
 
 // Projects TODO(rjeczalik): document
@@ -124,11 +146,13 @@ func (cli *CLI) Projects(ctx *cli.Context) {
 	cli.Init(ctx)
 	p, err := cli.c.Projects()
 	if err != nil {
-		cli.Error(err)
+		cli.Err(err)
 	}
+	v := make([]interface{}, 0, len(p))
 	for _, p := range p {
-		fmt.Println(p)
+		v = append(v, p)
 	}
+	cli.Out(v...)
 }
 
 // Agents TODO(rjeczalik): document
@@ -136,11 +160,13 @@ func (cli *CLI) Agents(ctx *cli.Context) {
 	cli.Init(ctx)
 	a, err := cli.c.Agents()
 	if err != nil {
-		cli.Error(err)
+		cli.Err(err)
 	}
+	v := make([]interface{}, 0, len(a))
 	for _, a := range a {
-		fmt.Printf("%+v\n", a)
+		v = append(v, a)
 	}
+	cli.Out(v...)
 }
 
 // Status TODO(rjeczalik): document
@@ -148,7 +174,7 @@ func (cli *CLI) Status(ctx *cli.Context) {
 	cli.Init(ctx)
 	p, err := cli.c.Projects()
 	if err != nil {
-		cli.Error(err)
+		cli.Err(err)
 	}
 	m := make(map[string][]pulse.BuildResult)
 	for _, p := range p {
@@ -164,7 +190,7 @@ func (cli *CLI) Status(ctx *cli.Context) {
 		} else {
 			b, err = cli.c.LatestBuildResult(p)
 			if err != nil {
-				cli.Error(err)
+				cli.Err(err)
 			}
 			var max int64
 			for i := range b {
@@ -178,15 +204,15 @@ func (cli *CLI) Status(ctx *cli.Context) {
 			n = max + n
 		}
 		if err != nil {
-			cli.Error(err)
+			cli.Err(err)
 		}
 		m[fmt.Sprintf("%s (build %d)", p, n)] = b
 	}
 	y, err := yaml.Marshal(m)
 	if err != nil {
-		cli.Error(err)
+		cli.Err(err)
 	}
-	fmt.Println(string(y))
+	cli.Out(string(y))
 }
 
 // Run TODO(rjeczalik): document

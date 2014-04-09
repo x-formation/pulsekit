@@ -36,7 +36,7 @@ COMMANDS:
    agents	list all agents
    status	list build status
    help, h	Shows a list of commands or help for one command
-   
+
 GLOBAL OPTIONS:
    --addr 'http://pulse/xmlrpc'	Pulse Remote API endpoint
    --user ''			Pulse user name
@@ -44,16 +44,29 @@ GLOBAL OPTIONS:
    --agent, -a '.*'		Agent name patter
    --project, -p '.*'		Project name pattern
    --build, -b '0'		Build number
+   --prtg			PRTG-friendly output
    --version, -v		print the version
    --help, -h			show help
 ```
+
+#### PRTG output
+
+Passing `--prtg` flag makes the output PRTG-friendly - when command exists with:
+
+* exit code 0, the output is:
+
+`0:0:OK`
+
+* exit code different than 0, the output is:
+
+`2:1:"<error message here>"`
 
 #### Examples
 
 ###### Performing a health check
 
 ```
-~ $ pulsecli --user $USER --pass $PASS health
+~ $ pulsecli --prtg --user $USER --pass $PASS health
 0:0:OK
 ```
 
@@ -61,14 +74,12 @@ GLOBAL OPTIONS:
 
 ```
 ~ $ pulsecli --user $USER --pass $PASS trigger
-0:0:OK
 ```
 
 ###### Triggering builds for all LM-X tiers
 
 ```
 ~ $ pulsecli --user $USER --pass $PASS --project 'LM-X - Tier' trigger
-0:0:OK
 ```
 
 * Listing all the agents

@@ -17,9 +17,9 @@ func fixture() (*bytes.Buffer, *int) {
 	return &buf, &code
 }
 
-func TestOK(t *testing.T) {
+func TestOut(t *testing.T) {
 	buf, code := fixture()
-	OK()
+	Out()
 	if buf.String() != "0:0:OK\n" {
 		t.Errorf(`expecting buf to be "0:0:OK\n", was %q instead`, buf.String())
 	}
@@ -28,7 +28,7 @@ func TestOK(t *testing.T) {
 	}
 }
 
-func TestError(t *testing.T) {
+func TestErr(t *testing.T) {
 	table := []struct {
 		args []interface{}
 		exp  string
@@ -43,7 +43,7 @@ func TestError(t *testing.T) {
 	}
 	for i := range table {
 		buf, code := fixture()
-		Error(table[i].args...)
+		Err(table[i].args...)
 		if buf.String() != table[i].exp {
 			t.Errorf(`expecting buf to be %q, was %q instead`, table[i].exp, buf.String())
 		}
