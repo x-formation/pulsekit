@@ -17,6 +17,7 @@ type Client interface {
 	Close() error
 	LatestBuildResult(project string) ([]BuildResult, error)
 	Projects() ([]string, error)
+	Stages(project string) ([]string, error)
 	Trigger(project string) ([]string, error)
 	WaitBuild(project string, id int64) <-chan struct{}
 }
@@ -63,6 +64,28 @@ func (c *client) BuildResult(project string, id int64) ([]BuildResult, error) {
 		return nil, err
 	}
 	return build, nil
+}
+
+// Stages TODO(rjeczalik): document
+func (c *client) Stages(project string) ([]string, error) {
+	// TODO It would be better to get stages list from project's configuration.
+	//      I ran away screaming while trying to get that information from the
+	//      Remote API spec.
+	b, err := c.LatestBuildResult(project)
+	if err != nil {
+		return nil, err
+	}
+	if len(b) == 0 {
+		return nil, errors.New("pulse: error requesting latest build status")
+	}
+	if len(b[0].Stages) == 0 {
+		return nil, errors.New("pulse: stage list is empty")
+	}
+	s := make([]string, 0, len(b[0].Stages))
+	for i := range b[0].Stages {
+		s = append(s, b[0].Stages[i].Name)
+	}
+	return s, nil
 }
 
 // LatestBuildResult TODO(rjeczalik): document

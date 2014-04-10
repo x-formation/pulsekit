@@ -165,7 +165,7 @@ func Pending(v interface{}) bool {
 		return Pending(&v.Stages)
 	case *[]BuildResult:
 		for i := range *v {
-			if Pending(&(*v)[i]) {
+			if Pending(&(*v)[i].Stages) {
 				return true
 			}
 		}
@@ -173,7 +173,7 @@ func Pending(v interface{}) bool {
 		return v.Agent == AgentPending
 	case *[]StageResult:
 		for i := range *v {
-			if (*v)[i].Agent == AgentPending {
+			if Pending(&(*v)[i]) {
 				return true
 			}
 		}

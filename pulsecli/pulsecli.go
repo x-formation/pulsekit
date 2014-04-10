@@ -134,11 +134,15 @@ func New() *CLI {
 		Action: cl.Health,
 	}, {
 		Name:   "projects",
-		Usage:  "Lists all projcts",
+		Usage:  "Lists all projct names",
 		Action: cl.Projects,
 	}, {
+		Name:   "stages",
+		Usage:  "Lists all stage names",
+		Action: cl.Stages,
+	}, {
 		Name:   "agents",
-		Usage:  "Lists all agents",
+		Usage:  "Lists all agent names",
 		Action: cl.Agents,
 	}, {
 		Name:   "status",
@@ -175,6 +179,20 @@ func (cli *CLI) Init(ctx *cli.Context) {
 		cli.Err(err)
 	}
 	cli.n = int64(n)
+}
+
+// Stages TODO(rjeczalik): document
+func (cli *CLI) Stages(ctx *cli.Context) {
+	cli.Init(ctx)
+	s, err := cli.c.Stages(cli.p.String())
+	if err != nil {
+		cli.Err(err)
+	}
+	msg := make([]interface{}, 0, len(s))
+	for _, s := range s {
+		msg = append(msg, s)
+	}
+	cli.Out(msg...)
 }
 
 // Build TODO(rjeczalik): document

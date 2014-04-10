@@ -33,8 +33,9 @@ COMMANDS:
    login	Creates or updates session for current user
    trigger	Triggers a build
    health	Performs a health check
-   projects	Lists all projcts
-   agents	Lists all agents
+   projects	Lists all projct names
+   stages	Lists all stage names
+   agents	Lists all agent names
    status	Lists build's status
    build	Gives build ID associated with given request ID
    help, h	Shows a list of commands or help for one command
@@ -44,9 +45,9 @@ GLOBAL OPTIONS:
    --user ''			Pulse user name
    --pass ''			Pulse user password
    --agent, -a '.*'		Agent name patter
-   --project, -p '.*'	Project name pattern
+   --project, -p '.*'		Project name pattern
    --build, -b '0'		Build number
-   --prtg				PRTG-friendly output
+   --prtg			PRTG-friendly output
    --version, -v		print the version
    --help, -h			show help
 ```
@@ -121,7 +122,36 @@ by a tab. In order to obtain the build ID run `pulsecli build <request id>`.
 2238845	"LM-X - Tier 2"
 ```
 
-* Listing all the agents
+###### Listing all the projects
+
+```
+~ $ pulsecli projects
+License Statistics - Development
+C++ - Unittest
+LM-X - Deployment
+Go - Unittest (devel)
+...
+C++ - Database
+Go - Database
+Go - Unittest
+Clang Profiling
+LM-X - Solaris 10 test
+License Activation Center - Accept SOAP
+License Activation Center - Accept REST
+```
+
+###### Listing all the stage for the 'License Activation Center - API' project
+
+```
+~ $ pulsecli --project 'License Activation Center - API' stages
+Build - VC2010 - API
+Build - Linux x86 - API
+Build - VC2010 x64 - API
+Build - Linux x64 - API
+Build - Mac OSX Universal 10.9 - API
+```
+
+###### Listing all the agents
 
 `agents` outputs a list of `<agent hostname>	<agent name>` pairs, separated
 by a tab. It tries to parse an agent's URL and output a hostname only. When
