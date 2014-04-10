@@ -110,13 +110,13 @@ func New() *CLI {
 	cl.app.Name, cl.app.Version = "pulsecli", "0.1.0"
 	cl.app.Usage = "a command-line client for a Pulse server"
 	cl.app.Flags = []cli.Flag{
-		cli.StringFlag{"addr", "http://pulse/xmlrpc", "Pulse Remote API endpoint"},
-		cli.StringFlag{"user", "", "Pulse user name"},
-		cli.StringFlag{"pass", "", "Pulse user password"},
-		cli.StringFlag{"agent, a", ".*", "Agent name patter"},
-		cli.StringFlag{"project, p", ".*", "Project name pattern"},
-		cli.IntFlag{"build, b", 0, "Build number"},
-		cli.BoolFlag{"prtg", "PRTG-friendly output"},
+		cli.StringFlag{Name: "addr", Value: "http://pulse/xmlrpc", Usage: "Pulse Remote API endpoint"},
+		cli.StringFlag{Name: "user", Value: "", Usage: "Pulse user name"},
+		cli.StringFlag{Name: "pass", Value: "", Usage: "Pulse user password"},
+		cli.StringFlag{Name: "agent, a", Value: ".*", Usage: "Agent name patter"},
+		cli.StringFlag{Name: "project, p", Value: ".*", Usage: "Project name pattern"},
+		cli.IntFlag{Name: "build, b", Value: 0, Usage: "Build number"},
+		cli.BoolFlag{Name: "prtg", Usage: "PRTG-friendly output"},
 	}
 	cl.app.Commands = []cli.Command{{
 		Name:   "login",
