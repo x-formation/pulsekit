@@ -32,6 +32,7 @@ VERSION:
 COMMANDS:
    login	Creates or updates session for current user
    trigger	Triggers a build
+   init		Initialises a project
    health	Performs a health check
    projects	Lists all projct names
    stages	Lists all stage names
@@ -120,6 +121,16 @@ by a tab. In order to obtain the build ID run `pulsecli build <request id>`.
 ~ $ pulsecli --project 'LM-X - Tier' trigger
 2238515	"LM-X - Tier 1"
 2238845	"LM-X - Tier 2"
+```
+
+
+###### Initialise all projects within 'Pulse CLI' group
+
+```
+~ $ pulsecli --project 'Pulse CLI' init
+true	"Pulse CLI - Failure"
+true	"Pulse CLI"
+true	"Pulse CLI - Success"
 ```
 
 ###### Listing all the projects

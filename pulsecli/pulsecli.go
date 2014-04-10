@@ -19,8 +19,8 @@ import (
 )
 
 var defaultErr = func(args ...interface{}) {
-	if len(args) != 0 {
-		fmt.Fprintln(os.Stderr, args...)
+	for _, arg := range args {
+		fmt.Fprintln(os.Stderr, arg)
 	}
 	os.Exit(1)
 }
@@ -129,6 +129,10 @@ func New() *CLI {
 		Usage:  "Triggers a build",
 		Action: cl.Trigger,
 	}, {
+		Name:   "init",
+		Usage:  "Initialises a project",
+		Action: cl.Init,
+	}, {
 		Name:   "health",
 		Usage:  "Performs a health check",
 		Action: cl.Health,
@@ -156,8 +160,7 @@ func New() *CLI {
 	return cl
 }
 
-// Init TODO(rjeczalik): document
-func (cli *CLI) Init(ctx *cli.Context) {
+func (cli *CLI) init(ctx *cli.Context) {
 	if ctx.GlobalBool("prtg") {
 		cli.Err, cli.Out = prtg.Err, prtg.Out
 	}
@@ -181,9 +184,30 @@ func (cli *CLI) Init(ctx *cli.Context) {
 	cli.n = int64(n)
 }
 
+// Init TODO(rjeczalik): document
+func (cli *CLI) Init(ctx *cli.Context) {
+	cli.init(ctx)
+	p, err := cli.c.Projects()
+	if err != nil {
+		cli.Err(err)
+	}
+	msg := make([]interface{}, 0, len(p))
+	for _, p := range p {
+		if !cli.p.MatchString(p) {
+			continue
+		}
+		ok, err := cli.c.Init(p)
+		if err != nil {
+			cli.Err(err)
+		}
+		msg = append(msg, fmt.Sprintf("%v\t%q", ok, p))
+	}
+	cli.Out(msg...)
+}
+
 // Stages TODO(rjeczalik): document
 func (cli *CLI) Stages(ctx *cli.Context) {
-	cli.Init(ctx)
+	cli.init(ctx)
 	s, err := cli.c.Stages(cli.p.String())
 	if err != nil {
 		cli.Err(err)
@@ -197,7 +221,7 @@ func (cli *CLI) Stages(ctx *cli.Context) {
 
 // Build TODO(rjeczalik): document
 func (cli *CLI) Build(ctx *cli.Context) {
-	cli.Init(ctx)
+	cli.init(ctx)
 	reqID := ctx.Args().First()
 	if reqID == "" {
 		cli.Err("the request ID is missing")
@@ -211,14 +235,14 @@ func (cli *CLI) Build(ctx *cli.Context) {
 
 // Login TODO(rjeczalik): document
 func (cli *CLI) Login(ctx *cli.Context) {
-	cli.Init(ctx)
+	cli.init(ctx)
 	old := []*string{&cli.cred.URL, &cli.cred.User, &cli.cred.Pass}
 	for i, s := range []string{ctx.GlobalString("addr"), ctx.GlobalString("user"), ctx.GlobalString("pass")} {
 		if s != "" {
 			(*old[i]) = s
 		}
 	}
-	cli.Init(ctx)
+	cli.init(ctx)
 	if err := cli.s.Save(cli.cred); err != nil {
 		cli.Err(err)
 	}
@@ -227,7 +251,7 @@ func (cli *CLI) Login(ctx *cli.Context) {
 
 // Trigger TODO(rjeczalik): document
 func (cli *CLI) Trigger(ctx *cli.Context) {
-	cli.Init(ctx)
+	cli.init(ctx)
 	p, err := cli.c.Projects()
 	if err != nil {
 		cli.Err(err)
@@ -253,7 +277,7 @@ func (cli *CLI) Trigger(ctx *cli.Context) {
 
 // Health TODO(rjeczalik): document
 func (cli *CLI) Health(ctx *cli.Context) {
-	cli.Init(ctx)
+	cli.init(ctx)
 	a, err := cli.c.Agents()
 	if err != nil {
 		cli.Err(err)
@@ -273,7 +297,7 @@ func (cli *CLI) Health(ctx *cli.Context) {
 
 // Projects TODO(rjeczalik): document
 func (cli *CLI) Projects(ctx *cli.Context) {
-	cli.Init(ctx)
+	cli.init(ctx)
 	p, err := cli.c.Projects()
 	if err != nil {
 		cli.Err(err)
@@ -287,7 +311,7 @@ func (cli *CLI) Projects(ctx *cli.Context) {
 
 // Agents TODO(rjeczalik): document
 func (cli *CLI) Agents(ctx *cli.Context) {
-	cli.Init(ctx)
+	cli.init(ctx)
 	a, err := cli.c.Agents()
 	if err != nil {
 		cli.Err(err)
@@ -307,7 +331,7 @@ func (cli *CLI) Agents(ctx *cli.Context) {
 
 // Status TODO(rjeczalik): document
 func (cli *CLI) Status(ctx *cli.Context) {
-	cli.Init(ctx)
+	cli.init(ctx)
 	p, err := cli.c.Projects()
 	if err != nil {
 		cli.Err(err)

@@ -15,6 +15,7 @@ type Client interface {
 	BuildResult(project string, id int64) ([]BuildResult, error)
 	Clear(project string) error
 	Close() error
+	Init(project string) (bool, error)
 	LatestBuildResult(project string) ([]BuildResult, error)
 	Projects() ([]string, error)
 	Stages(project string) ([]string, error)
@@ -37,6 +38,12 @@ func NewClient(url, user, pass string) (Client, error) {
 		return nil, err
 	}
 	return c, nil
+}
+
+// Init TODO(rjeczalik): document
+func (c *client) Init(project string) (ok bool, err error) {
+	err = c.rpc.Call("RemoteApi.initialiseProject", []interface{}{c.tok, project}, &ok)
+	return
 }
 
 // BuildID TODO(rjeczalik): document
