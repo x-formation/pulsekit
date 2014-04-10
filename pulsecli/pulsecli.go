@@ -1,8 +1,12 @@
 package pulsecli
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
+	"os/user"
+	"path/filepath"
 	"regexp"
 
 	"github.com/x-formation/int-tools/pulseutil"
@@ -26,6 +30,60 @@ var defaultOut = func(args ...interface{}) {
 	os.Exit(0)
 }
 
+// Creds TODO(rjeczalik): document
+type Creds struct {
+	URL  string
+	User string
+	Pass string
+}
+
+// Login TODO(rjeczalik): document
+type CredsStore interface {
+	Load() (*Creds, error)
+	Save(*Creds) error
+}
+
+type fileStore struct{}
+
+func config(mode int) (f *os.File, err error) {
+	u, err := user.Current()
+	if err != nil {
+		return
+	}
+	return os.OpenFile(filepath.Join(u.HomeDir, ".pulsecli"), mode, 0644)
+}
+
+// Load TODO(rjeczalik): document
+func (fileStore) Load() (c *Creds, err error) {
+	f, err := config(os.O_RDONLY)
+	if err != nil {
+		return
+	}
+	c = &Creds{}
+	var b bytes.Buffer
+	if _, err = io.Copy(&b, f); err != nil {
+		return
+	}
+	if err = yaml.Unmarshal(b.Bytes(), c); err != nil {
+		return
+	}
+	return
+}
+
+// Save TODO(rjeczalik): document
+func (fileStore) Save(c *Creds) error {
+	f, err := config(os.O_TRUNC | os.O_CREATE | os.O_WRONLY)
+	if err != nil {
+		return err
+	}
+	b, err := yaml.Marshal(c)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(f, bytes.NewBuffer(b))
+	return err
+}
+
 // New TODO(rjeczalik): document
 type CLI struct {
 	Err  func(...interface{})
@@ -34,16 +92,20 @@ type CLI struct {
 	c    pulse.Client
 	a    *regexp.Regexp
 	p    *regexp.Regexp
+	s    CredsStore
 	n    int64
 	prtg bool
+	cred *Creds
 }
 
 // New TODO(rjeczalik): document
 func New() *CLI {
 	cl := &CLI{
-		Err: defaultErr,
-		Out: defaultOut,
-		app: cli.NewApp(),
+		Err:  defaultErr,
+		Out:  defaultOut,
+		app:  cli.NewApp(),
+		s:    fileStore{},
+		cred: &Creds{},
 	}
 	cl.app.Name, cl.app.Version = "pulsecli", "0.1.0"
 	cl.app.Usage = "a command-line client for a Pulse server"
@@ -57,6 +119,10 @@ func New() *CLI {
 		cli.BoolFlag{"prtg", "PRTG-friendly output"},
 	}
 	cl.app.Commands = []cli.Command{{
+		Name:   "login",
+		Usage:  "create or update session for current user",
+		Action: cl.Login,
+	}, {
 		Name:   "trigger",
 		Usage:  "trigger a build",
 		Action: cl.Trigger,
@@ -86,9 +152,14 @@ func (cli *CLI) Init(ctx *cli.Context) {
 		cli.Err, cli.Out = prtg.Err, prtg.Out
 	}
 	var err error
-	addr, user, pass := ctx.GlobalString("addr"), ctx.GlobalString("user"), ctx.GlobalString("pass")
-	if cli.c, err = pulse.NewClient(addr, user, pass); err != nil {
-		cli.Err(err)
+	if cli.cred, err = cli.s.Load(); err == nil {
+		cli.c, err = pulse.NewClient(cli.cred.URL, cli.cred.User, cli.cred.Pass)
+	}
+	if err != nil {
+		cli.cred = &Creds{ctx.GlobalString("addr"), ctx.GlobalString("user"), ctx.GlobalString("pass")}
+		if cli.c, err = pulse.NewClient(cli.cred.URL, cli.cred.User, cli.cred.Pass); err != nil {
+			cli.Err(err)
+		}
 	}
 	a, p, n := ctx.GlobalString("agent"), ctx.GlobalString("project"), ctx.GlobalInt("build")
 	if cli.a, err = regexp.Compile(a); err != nil {
@@ -98,6 +169,22 @@ func (cli *CLI) Init(ctx *cli.Context) {
 		cli.Err(err)
 	}
 	cli.n = int64(n)
+}
+
+// Login TODO(rjeczalik): document
+func (cli *CLI) Login(ctx *cli.Context) {
+	cli.Init(ctx)
+	old := []*string{&cli.cred.URL, &cli.cred.User, &cli.cred.Pass}
+	for i, s := range []string{ctx.GlobalString("addr"), ctx.GlobalString("user"), ctx.GlobalString("pass")} {
+		if s != "" {
+			(*old[i]) = s
+		}
+	}
+	cli.Init(ctx)
+	if err := cli.s.Save(cli.cred); err != nil {
+		cli.Err(err)
+	}
+	cli.Out()
 }
 
 // Trigger TODO(rjeczalik): document

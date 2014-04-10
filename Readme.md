@@ -30,6 +30,7 @@ VERSION:
    0.1.0
 
 COMMANDS:
+   login	create or update session for current user
    trigger	trigger a build
    health	perform a health check
    projects	list all projcts
@@ -63,29 +64,40 @@ Passing `--prtg` flag makes the output PRTG-friendly - when command exists with:
 
 #### Examples
 
+###### Storing credentials in `$HOME`
+
+Credentials are stored for a current user in `~/.pulsecli`. They're stored as
+plain text, so be careful if others have access to your `$HOME` directory.
+
+```
+~ $ pulsecli --user $USER --pass $PASS login
+~ $ pulsecli --prtg health
+0:0:OK
+```
+
 ###### Performing a health check
 
 ```
-~ $ pulsecli --prtg --user $USER --pass $PASS health
+~ $ pulsecli --prtg health
 0:0:OK
 ```
 
 ###### Triggering builds for all the projects
 
 ```
-~ $ pulsecli --user $USER --pass $PASS trigger
+~ $ pulsecli trigger
 ```
 
 ###### Triggering builds for all LM-X tiers
 
 ```
-~ $ pulsecli --user $USER --pass $PASS --project 'LM-X - Tier' trigger
+~ $ pulsecli --project 'LM-X - Tier' trigger
 ```
 
 * Listing all the agents
 
 ```
-~ $ pulsecli --user $USER --pass $PASS agents
+~ $ pulsecli agents
 AIX - 5.3@http://aix275:8090
 FreeBSD 10 - x64@http://freebsd10_x64:8090
 HPUX - IA64@http://hpuxia64:8090
@@ -100,12 +112,12 @@ Windows 8.1 - 9@http://pulse-win-9:8090
 
 ###### Getting status of the `LM-X - Release Build - Tier 2` project
 
-The `--build` or `-b` flag expects either: 
+The `--build` or `-b` flag expects either:
 
   * a real build number
   * 0 which means latest build number
 ```
-~ $ pulsecli --user $USER --pass $PASS -p 'LM-X - Release Build - Tier 2' -b 0 status
+~ $ pulsecli -p 'LM-X - Release Build - Tier 2' -b 0 status
 LM-X - Release Build - Tier 2 (build 547):
 - id: 547
   complete: true
@@ -124,7 +136,7 @@ LM-X - Release Build - Tier 2 (build 547):
 ```
   * a negative number being an relative offset to the latest build number
 ```
-~ $ pulsecli --user $USER --pass $PASS -p 'LM-X - Release Build - Tier 2' -b -10 status
+~ $ pulsecli -p 'LM-X - Release Build - Tier 2' -b -10 status
 LM-X - Release Build - Tier 2 (build 537):
 - id: 537
   complete: true
@@ -144,6 +156,5 @@ LM-X - Release Build - Tier 2 (build 537):
 #### TODO
 
 * create project on JIRA to track the issues
-* session management (save encrypted user/pass to `~/.pulsecli` to spare the user effort typing it each time)
 * verbose logging, currently the output is PRTG-friendly, which should be made optional (e.g. using `--prtg` flag)
 * `cmd/pulseclid` daemon for watching builds, which will be used for `github.com` bot
