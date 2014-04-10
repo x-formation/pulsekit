@@ -122,28 +122,32 @@ func New() *CLI {
 	}
 	cl.app.Commands = []cli.Command{{
 		Name:   "login",
-		Usage:  "create or update session for current user",
+		Usage:  "Creates or updates session for current user",
 		Action: cl.Login,
 	}, {
 		Name:   "trigger",
-		Usage:  "trigger a build",
+		Usage:  "Triggers a build",
 		Action: cl.Trigger,
 	}, {
 		Name:   "health",
-		Usage:  "perform a health check",
+		Usage:  "Performs a health check",
 		Action: cl.Health,
 	}, {
 		Name:   "projects",
-		Usage:  "list all projcts",
+		Usage:  "Lists all projcts",
 		Action: cl.Projects,
 	}, {
 		Name:   "agents",
-		Usage:  "list all agents",
+		Usage:  "Lists all agents",
 		Action: cl.Agents,
 	}, {
 		Name:   "status",
-		Usage:  "list build status",
+		Usage:  `Lists build's status`,
 		Action: cl.Status,
+	}, {
+		Name:   "build",
+		Usage:  "Gives build ID associated with given request ID",
+		Action: cl.Build,
 	}}
 	return cl
 }
@@ -171,6 +175,20 @@ func (cli *CLI) Init(ctx *cli.Context) {
 		cli.Err(err)
 	}
 	cli.n = int64(n)
+}
+
+// Build TODO(rjeczalik): document
+func (cli *CLI) Build(ctx *cli.Context) {
+	cli.Init(ctx)
+	reqID := ctx.Args().First()
+	if reqID == "" {
+		cli.Err("the request ID is missing")
+	}
+	id, err := cli.c.BuildID(reqID)
+	if err != nil {
+		cli.Err(err)
+	}
+	cli.Out(id)
 }
 
 // Login TODO(rjeczalik): document

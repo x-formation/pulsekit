@@ -30,12 +30,13 @@ VERSION:
    0.1.0
 
 COMMANDS:
-   login	create or update session for current user
-   trigger	trigger a build
-   health	perform a health check
-   projects	list all projcts
-   agents	list all agents
-   status	list build status
+   login	Creates or updates session for current user
+   trigger	Triggers a build
+   health	Performs a health check
+   projects	Lists all projcts
+   agents	Lists all agents
+   status	Lists build's status
+   build	Gives build ID associated with given request ID
    help, h	Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
@@ -43,9 +44,9 @@ GLOBAL OPTIONS:
    --user ''			Pulse user name
    --pass ''			Pulse user password
    --agent, -a '.*'		Agent name patter
-   --project, -p '.*'		Project name pattern
+   --project, -p '.*'	Project name pattern
    --build, -b '0'		Build number
-   --prtg			PRTG-friendly output
+   --prtg				PRTG-friendly output
    --version, -v		print the version
    --help, -h			show help
 ```
@@ -84,6 +85,9 @@ plain text, so be careful if others have access to your `$HOME` directory.
 
 ###### Triggering builds for all the projects except LAC
 
+`trigger` outputs a list of `<request id>	<project name>` pairs, separated
+by a tab. In order to obtain the build ID run `pulsecli build <request id>`.
+
 ```
 ~ $ pulsecli --project '^[^C]*$' trigger
 2242787	"License Statistics - Development"
@@ -100,7 +104,13 @@ plain text, so be careful if others have access to your `$HOME` directory.
 2249091	"Go - Accept (devel)"
 2249227	"LM-X - Solaris 10 test"
 2249380	"Puppet Node Tests"
+```
 
+###### Obtaining the build ID for 2260289 request ID
+
+```
+~ $ pulsecli build 2260289
+130
 ```
 
 ###### Triggering builds for all LM-X tiers
@@ -113,18 +123,26 @@ plain text, so be careful if others have access to your `$HOME` directory.
 
 * Listing all the agents
 
+`agents` outputs a list of `<agent hostname>	<agent name>` pairs, separated
+by a tab. It tries to parse an agent's URL and output a hostname only. When
+parsing fails (e.g. Pulse 2.6.19 does not put ipv6 addresses in brackets)
+it outputs an URL instead.
+
 ```
 ~ $ pulsecli agents
-AIX - 5.3@http://aix275:8090
-FreeBSD 10 - x64@http://freebsd10_x64:8090
-HPUX - IA64@http://hpuxia64:8090
-Linux - ARM@http://pulse-arm:8090
-Linux - CentOS 5.10 - Distrib - x64@http://centos5_x64:8090
+aix275	 "AIX - 5.3"
+freebsd10_x64	 "FreeBSD 10 - x64"
+hpuxia64	 "HPUX - IA64"
+pulse-arm	 "Linux - ARM"
+centos5_x64	 "Linux - CentOS 5.10 - Distrib - x64"
+coverage	 "Linux - Coverage"
+pulse-deb50-x64	 "Linux - Debian 5.0 - Distrib - x64"
+pulse-deb50-x86	 "Linux - Debian 5.0 - Distrib - x86"
+http://8000:8000:8000:8000:250:56ff:febc:619a:8090	 "Linux - IPv6"
 ...
-Windows 8.1 - 6@http://pulse-win-6:8090
-Windows 8.1 - 7@http://pulse-win-7:8090
-Windows 8.1 - 8@http://pulse-win-8:8090
-Windows 8.1 - 9@http://pulse-win-9:8090
+pulse-win-7	 "Windows 8.1 - 7"
+pulse-win-8	 "Windows 8.1 - 8"
+pulse-win-9	 "Windows 8.1 - 9"
 ```
 
 ###### Getting status of the `LM-X - Release Build - Tier 2` project
