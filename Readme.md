@@ -82,16 +82,33 @@ plain text, so be careful if others have access to your `$HOME` directory.
 0:0:OK
 ```
 
-###### Triggering builds for all the projects
+###### Triggering builds for all the projects except LAC
 
 ```
-~ $ pulsecli trigger
+~ $ pulsecli --project '^[^C]*$' trigger
+2242787	"License Statistics - Development"
+2243158	"LM-X - Tier 1"
+2243466	"LM-X - Tier 2"
+2243871	"Sales Assistant - Deployment"
+2244123	"LM-X - Deployment"
+...
+2248358	"Go - Database"
+2248525	"Sales Assistant - Tests and Installer"
+2248659	"Shared PHP Library"
+2248803	"Go - Unittest"
+2248953	"Sales Assistant - deploy"
+2249091	"Go - Accept (devel)"
+2249227	"LM-X - Solaris 10 test"
+2249380	"Puppet Node Tests"
+
 ```
 
 ###### Triggering builds for all LM-X tiers
 
 ```
 ~ $ pulsecli --project 'LM-X - Tier' trigger
+2238515	"LM-X - Tier 1"
+2238845	"LM-X - Tier 2"
 ```
 
 * Listing all the agents
@@ -156,5 +173,4 @@ LM-X - Release Build - Tier 2 (build 537):
 #### TODO
 
 * create project on JIRA to track the issues
-* verbose logging, currently the output is PRTG-friendly, which should be made optional (e.g. using `--prtg` flag)
 * `cmd/pulseclid` daemon for watching builds, which will be used for `github.com` bot

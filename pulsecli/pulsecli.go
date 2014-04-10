@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net"
+	"net/url"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -24,8 +26,8 @@ var defaultErr = func(args ...interface{}) {
 }
 
 var defaultOut = func(args ...interface{}) {
-	if len(args) != 0 {
-		fmt.Println(args...)
+	for _, arg := range args {
+		fmt.Println(arg)
 	}
 	os.Exit(0)
 }
@@ -194,6 +196,7 @@ func (cli *CLI) Trigger(ctx *cli.Context) {
 	if err != nil {
 		cli.Err(err)
 	}
+	msg := make([]interface{}, 0, len(p))
 	for _, p := range p {
 		if !cli.p.MatchString(p) {
 			continue
@@ -201,11 +204,15 @@ func (cli *CLI) Trigger(ctx *cli.Context) {
 		if err = cli.c.Clear(p); err != nil {
 			cli.Err(err)
 		}
-		if _, err = cli.c.Trigger(p); err != nil {
+		s, err := cli.c.Trigger(p)
+		if err != nil {
 			cli.Err(err)
 		}
+		for _, s := range s {
+			msg = append(msg, fmt.Sprintf("%s\t%q", s, p))
+		}
 	}
-	cli.Out()
+	cli.Out(msg...)
 }
 
 // Health TODO(rjeczalik): document
@@ -219,11 +226,11 @@ func (cli *CLI) Health(ctx *cli.Context) {
 		cli.Err("Pulse Agents are hanging again!")
 	}
 	if a = pulse.Filter(a, pulse.IsOffline); len(a) > 0 {
-		args := make([]interface{}, 0, len(a))
+		msg := make([]interface{}, 0, len(a))
 		for i := range a {
-			args = append(args, a[i])
+			msg = append(msg, a[i])
 		}
-		cli.Err(args...)
+		cli.Err(msg...)
 	}
 	cli.Out()
 }
@@ -235,11 +242,11 @@ func (cli *CLI) Projects(ctx *cli.Context) {
 	if err != nil {
 		cli.Err(err)
 	}
-	v := make([]interface{}, 0, len(p))
+	msg := make([]interface{}, 0, len(p))
 	for _, p := range p {
-		v = append(v, p)
+		msg = append(msg, p)
 	}
-	cli.Out(v...)
+	cli.Out(msg...)
 }
 
 // Agents TODO(rjeczalik): document
@@ -249,11 +256,17 @@ func (cli *CLI) Agents(ctx *cli.Context) {
 	if err != nil {
 		cli.Err(err)
 	}
-	v := make([]interface{}, 0, len(a))
+	msg := make([]interface{}, 0, len(a))
 	for _, a := range a {
-		v = append(v, a)
+		h := a.Host
+		if u, err := url.Parse(h); err == nil {
+			if host, _, err := net.SplitHostPort(u.Host); err == nil {
+				h = host
+			}
+		}
+		msg = append(msg, fmt.Sprintf("%s\t %q", h, a.Name))
 	}
-	cli.Out(v...)
+	cli.Out(msg...)
 }
 
 // Status TODO(rjeczalik): document
