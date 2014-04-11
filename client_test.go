@@ -19,22 +19,6 @@ func fixture(t *testing.T) Client {
 	return c
 }
 
-func TestProjects(t *testing.T) {
-	c := fixture(t)
-	p, err := c.Projects()
-	if err != nil {
-		t.Fatalf("expected err to be nil, was %v instead", err)
-	}
-	if len(p) == 0 {
-		t.Fatal("expected len(p) to be non-zero")
-	}
-	for _, p := range p {
-		if p == "" {
-			t.Error("expected p to be non-empty")
-		}
-	}
-}
-
 func TestAgents(t *testing.T) {
 	c := fixture(t)
 	a, err := c.Agents()
@@ -57,7 +41,59 @@ func TestAgents(t *testing.T) {
 	}
 }
 
-func testBuild(t *testing.T, project string, ok bool) {
+func TestBuildID(t *testing.T) {
+	t.Skip("TODO(rjeczalik)")
+}
+
+func TestBuildResult(t *testing.T) {
+	t.Skip("TODO(rjeczalik)")
+}
+
+func TestClear(t *testing.T) {
+	t.Skip("TODO(rjeczalik)")
+}
+
+func TestClose(t *testing.T) {
+	t.Skip("TODO(rjeczalik)")
+}
+
+func TestInit(t *testing.T) {
+	t.Skip("TODO(rjeczalik)")
+}
+
+func TestLatestBuildResult(t *testing.T) {
+	t.Skip("TODO(rjeczalik)")
+}
+
+func TestProjects(t *testing.T) {
+	c := fixture(t)
+	p, err := c.Projects()
+	if err != nil {
+		t.Fatalf("expected err to be nil, was %v instead", err)
+	}
+	if len(p) == 0 {
+		t.Fatal("expected len(p) to be non-zero")
+	}
+	for _, p := range p {
+		if p == "" {
+			t.Error("expected p to be non-empty")
+		}
+	}
+}
+
+func TestStages(t *testing.T) {
+	t.Skip("TODO(rjeczalik)")
+}
+
+func TestTrigger(t *testing.T) {
+	t.Skip("TODO(rjeczalik)")
+}
+
+func TestWaitBuild(t *testing.T) {
+	t.Skip("TODO(rjeczalik)")
+}
+
+func accept(t *testing.T, project string, ok bool) {
 	c := fixture(t)
 	reqid, err := c.Trigger(project)
 	if err != nil {
@@ -92,10 +128,10 @@ func testBuild(t *testing.T, project string, ok bool) {
 	}
 }
 
-func TestBuildOk(t *testing.T) {
-	testBuild(t, OkProject, true)
+func TestAcceptOk(t *testing.T) {
+	accept(t, OkProject, true)
 }
 
-func TestBuildBroken(t *testing.T) {
-	testBuild(t, BrokenProject, false)
+func TestAcceptBroken(t *testing.T) {
+	accept(t, BrokenProject, false)
 }

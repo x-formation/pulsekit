@@ -75,9 +75,9 @@ func (c *client) BuildResult(project string, id int64) ([]BuildResult, error) {
 
 // Stages TODO(rjeczalik): document
 func (c *client) Stages(project string) ([]string, error) {
-	// TODO It would be better to get stages list from project's configuration.
-	//      I ran away screaming while trying to get that information from the
-	//      Remote API spec.
+	// TODO(rjeczalik): It would be better to get stages list from project's configuration.
+	//                  I ran away screaming while trying to get that information from
+	//                  the Remote API spec.
 	b, err := c.LatestBuildResult(project)
 	if err != nil {
 		return nil, err
