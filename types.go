@@ -157,3 +157,22 @@ type BuildResult struct {
 	Version   string        `xmlrpc:"version"`
 	Warnings  int           `xmlrpc:"warningCount"`
 }
+
+// Severity TODO(rjeczalik): document
+type Severity string
+
+const (
+	SeverityInfo    Severity = "info"
+	SeverityWarning Severity = "warning"
+	SeverityError   Severity = "error"
+)
+
+// Message TODO(rjeczalik): document
+type Message struct {
+	Severity     Severity `xmlrpc:"level"`
+	Message      string   `xmlrpc:"message"`
+	StageName    string   `xmlrpc:"stage"`
+	CommandName  string   `xmlrpc:"command"`
+	ArtifactName string   `xmlrpc:"artifact"`
+	Path         string   `xmlrpc:"path"`
+}

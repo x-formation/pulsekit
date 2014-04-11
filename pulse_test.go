@@ -41,10 +41,47 @@ func TestAgentsFilter(t *testing.T) {
 		{Agent{Host: "pulse-x64-1"}, Agent{Host: "pulse-x86-2"}},
 	}
 	for i := range agents {
-		filtered := agents[i].Filter(filters[i])
-		if !reflect.DeepEqual(filtered, expected[i]) {
-			t.Errorf("expected filtered to be equal %v, was %v instead (i=%d)",
-				expected[i], filtered, i)
+		a := agents[i].Filter(filters[i])
+		if !reflect.DeepEqual(a, expected[i]) {
+			t.Errorf("expected a to be equal %v, was %v instead (i=%d)",
+				expected[i], a, i)
+		}
+	}
+}
+
+func TestMessagesFilter(t *testing.T) {
+	messages := []Messages{
+		{Message{Severity: SeverityInfo}, Message{Severity: SeverityInfo}, Message{Severity: SeverityInfo}},
+		{Message{Severity: SeverityWarning}, Message{Severity: SeverityInfo}, Message{Severity: SeverityError}},
+		{Message{Severity: SeverityWarning}, Message{Severity: SeverityWarning}, Message{Severity: SeverityError}},
+		{Message{Severity: SeverityWarning}, Message{Severity: SeverityWarning}, Message{Severity: SeverityWarning}},
+		{Message{Severity: SeverityError}, Message{Severity: SeverityWarning}, Message{Severity: SeverityInfo}},
+		{Message{Severity: SeverityError}, Message{Severity: SeverityError}, Message{Severity: SeverityInfo}},
+		{Message{Severity: SeverityError}, Message{Severity: SeverityError}, Message{Severity: SeverityError}},
+		{Message{Severity: SeverityInfo}, Message{Severity: SeverityError}, Message{Severity: SeverityWarning}},
+		{Message{Severity: SeverityInfo}, Message{Severity: SeverityInfo}, Message{Severity: SeverityWarning}},
+	}
+	filters := []func(*Message) bool{
+		Info, Info, Info,
+		Warning, Warning, Warning,
+		Error, Error, Error,
+	}
+	expected := []Messages{
+		{Message{Severity: SeverityInfo}, Message{Severity: SeverityInfo}, Message{Severity: SeverityInfo}},
+		{Message{Severity: SeverityInfo}},
+		{},
+		{Message{Severity: SeverityWarning}, Message{Severity: SeverityWarning}, Message{Severity: SeverityWarning}},
+		{Message{Severity: SeverityWarning}},
+		{},
+		{Message{Severity: SeverityError}, Message{Severity: SeverityError}, Message{Severity: SeverityError}},
+		{Message{Severity: SeverityError}},
+		{},
+	}
+	for i := range messages {
+		m := messages[i].Filter(filters[i])
+		if !reflect.DeepEqual(m, expected[i]) {
+			t.Errorf("expected m to be equal %v, was %v instead (i=%d)",
+				expected[i], m, i)
 		}
 	}
 }
