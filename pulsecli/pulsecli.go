@@ -282,10 +282,10 @@ func (cli *CLI) Health(ctx *cli.Context) {
 	if err != nil {
 		cli.Err(err)
 	}
-	if len(pulse.Filter(a, pulse.IsSync)) >= len(a)/2 {
+	if len(a.Filter(pulse.Sync)) >= len(a)/2 {
 		cli.Err("Pulse Agents are hanging again!")
 	}
-	if a = pulse.Filter(a, pulse.IsOffline); len(a) > 0 {
+	if a = a.Filter(pulse.Offline); len(a) > 0 {
 		msg := make([]interface{}, 0, len(a))
 		for i := range a {
 			msg = append(msg, a[i])

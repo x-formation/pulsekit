@@ -10,7 +10,7 @@ import (
 
 // Client TODO(rjeczalik): document
 type Client interface {
-	Agents() ([]Agent, error)
+	Agents() (Agents, error)
 	BuildID(reqid string) (int64, error)
 	BuildResult(project string, id int64) ([]BuildResult, error)
 	Clear(project string) error
@@ -168,17 +168,17 @@ func (c *client) Projects() (s []string, err error) {
 }
 
 // Agents TODO(rjeczalik): document
-func (c *client) Agents() ([]Agent, error) {
+func (c *client) Agents() (Agents, error) {
 	var names []string
 	if err := c.rpc.Call("RemoteApi.getAllAgentNames", c.tok, &names); err != nil {
 		return nil, err
 	}
-	agents := make([]Agent, len(names))
+	a := make(Agents, len(names))
 	for i := range names {
-		if err := c.rpc.Call("RemoteApi.getAgentDetails", []interface{}{c.tok, names[i]}, &agents[i]); err != nil {
+		if err := c.rpc.Call("RemoteApi.getAgentDetails", []interface{}{c.tok, names[i]}, &a[i]); err != nil {
 			return nil, err
 		}
-		agents[i].Name = names[i]
+		a[i].Name = names[i]
 	}
-	return agents, nil
+	return a, nil
 }
