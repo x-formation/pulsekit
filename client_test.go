@@ -93,6 +93,10 @@ func TestWaitBuild(t *testing.T) {
 	t.Skip("TODO(rjeczalik)")
 }
 
+func TestGetBuildID(t *testing.T) {
+	t.Skip("TODO(rjeczalik)")
+}
+
 func accept(t *testing.T, project string, ok bool) {
 	c := fixture(t)
 	reqid, err := c.Trigger(project)

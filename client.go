@@ -17,6 +17,7 @@ type Client interface {
 	Close() error
 	Init(project string) (bool, error)
 	LatestBuildResult(project string) ([]BuildResult, error)
+	Messages(project string, id int64) (Messages, error)
 	Projects() ([]string, error)
 	Stages(project string) ([]string, error)
 	Trigger(project string) ([]string, error)
@@ -44,6 +45,24 @@ func NewClient(url, user, pass string) (Client, error) {
 func (c *client) Init(project string) (ok bool, err error) {
 	err = c.rpc.Call("RemoteApi.initialiseProject", []interface{}{c.tok, project}, &ok)
 	return
+}
+
+// Messages TODO(rjeczalik): document
+func (c *client) Messages(project string, id int64) (Messages, error) {
+	var (
+		m, warn, info Messages
+		req           = []interface{}{c.tok, project, int(id)}
+	)
+	if err := c.rpc.Call("RemoteApi.getErrorMessagesInBuild", req, &m); err != nil {
+		return nil, err
+	}
+	if err := c.rpc.Call("RemoteApi.getWarningMessagesInBuild", req, &warn); err != nil {
+		return nil, err
+	}
+	if err := c.rpc.Call("RemoteApi.getInfoMessagesInBuild", req, &info); err != nil {
+		return nil, err
+	}
+	return append(append(m, warn...), info...), nil
 }
 
 // BuildID TODO(rjeczalik): document

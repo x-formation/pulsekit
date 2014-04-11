@@ -77,11 +77,27 @@ func TestMessagesFilter(t *testing.T) {
 		{Message{Severity: SeverityError}},
 		{},
 	}
+	expectedout := []Messages{
+		{},
+		{Message{Severity: SeverityWarning}, Message{Severity: SeverityError}},
+		{Message{Severity: SeverityWarning}, Message{Severity: SeverityWarning}, Message{Severity: SeverityError}},
+		{},
+		{Message{Severity: SeverityError}, Message{Severity: SeverityInfo}},
+		{Message{Severity: SeverityError}, Message{Severity: SeverityError}, Message{Severity: SeverityInfo}},
+		{},
+		{Message{Severity: SeverityInfo}, Message{Severity: SeverityWarning}},
+		{Message{Severity: SeverityInfo}, Message{Severity: SeverityInfo}, Message{Severity: SeverityWarning}},
+	}
 	for i := range messages {
 		m := messages[i].Filter(filters[i])
 		if !reflect.DeepEqual(m, expected[i]) {
 			t.Errorf("expected m to be equal %v, was %v instead (i=%d)",
 				expected[i], m, i)
+		}
+		m = messages[i].FilterOut(filters[i])
+		if !reflect.DeepEqual(m, expectedout[i]) {
+			t.Errorf("expected m to be equal %v, was %v instead (i=%d)",
+				expectedout[i], m, i)
 		}
 	}
 }

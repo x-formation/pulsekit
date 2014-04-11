@@ -1,4 +1,4 @@
-// TODO(rjeczalik): Agents.Filter and Messages.Filter share basically the same
+// TODO(rjeczalik): Agents.Filter{,Out} and Messages.Filter{,Out} share the same
 //                  implementation, but because of lack of generics it is
 //                  duplicated right now. If it turns out it must be duplicated
 //                  for even more types it would be nice to find out whether it's
@@ -35,6 +35,19 @@ func (a Agents) Filter(pred ...func(*Agent) bool) Agents {
 	return b.Filter(pred[1:]...)
 }
 
+// FilterOut TODO(rjeczalik): document
+func (a Agents) FilterOut(pred ...func(*Agent) bool) Agents {
+	if len(pred) == 0 {
+		panic("pulse: missing predicate")
+	}
+	notpred := make([]func(*Agent) bool, 0, len(pred))
+	for _, pred := range pred {
+		pred := pred
+		notpred = append(notpred, func(a *Agent) bool { return !pred(a) })
+	}
+	return a.Filter(notpred...)
+}
+
 // Info TODO(rjeczalik): document
 var Info = func(m *Message) bool {
 	return m.Severity == SeverityInfo
@@ -68,6 +81,19 @@ func (m Messages) Filter(pred ...func(*Message) bool) Messages {
 		return n
 	}
 	return n.Filter(pred[1:]...)
+}
+
+// FilterOut TODO(rjeczalik): document
+func (m Messages) FilterOut(pred ...func(*Message) bool) Messages {
+	if len(pred) == 0 {
+		panic("pulse: missing predicate")
+	}
+	notpred := make([]func(*Message) bool, 0, len(pred))
+	for _, pred := range pred {
+		pred := pred
+		notpred = append(notpred, func(m *Message) bool { return !pred(m) })
+	}
+	return m.Filter(notpred...)
 }
 
 // Pending TODO(rjeczalik): document

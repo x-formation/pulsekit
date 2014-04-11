@@ -88,26 +88,28 @@ func (fileStore) Save(c *Creds) error {
 
 // New TODO(rjeczalik): document
 type CLI struct {
-	Err  func(...interface{})
-	Out  func(...interface{})
-	app  *cli.App
-	c    pulse.Client
-	a    *regexp.Regexp
-	p    *regexp.Regexp
-	s    CredsStore
-	n    int64
-	prtg bool
-	cred *Creds
+	Client func(url, user, pass string) (pulse.Client, error)
+	Out    func(...interface{})
+	Err    func(...interface{})
+	Store  CredsStore
+	app    *cli.App
+	c      pulse.Client
+	a      *regexp.Regexp
+	p      *regexp.Regexp
+	n      int64
+	prtg   bool
+	cred   *Creds
 }
 
 // New TODO(rjeczalik): document
 func New() *CLI {
 	cl := &CLI{
-		Err:  defaultErr,
-		Out:  defaultOut,
-		app:  cli.NewApp(),
-		s:    fileStore{},
-		cred: &Creds{},
+		Client: pulse.NewClient,
+		Store:  fileStore{},
+		Err:    defaultErr,
+		Out:    defaultOut,
+		app:    cli.NewApp(),
+		cred:   &Creds{},
 	}
 	cl.app.Name, cl.app.Version = "pulsecli", "0.1.0"
 	cl.app.Usage = "a command-line client for a Pulse server"
@@ -160,36 +162,41 @@ func New() *CLI {
 	return cl
 }
 
-func (cli *CLI) init(ctx *cli.Context) {
+func (cli *CLI) init(ctx *cli.Context) error {
 	if ctx.GlobalBool("prtg") {
 		cli.Err, cli.Out = prtg.Err, prtg.Out
 	}
 	var err error
-	if cli.cred, err = cli.s.Load(); err == nil {
-		cli.c, err = pulse.NewClient(cli.cred.URL, cli.cred.User, cli.cred.Pass)
+	if cli.cred, err = cli.Store.Load(); err == nil {
+		cli.c, err = cli.Client(cli.cred.URL, cli.cred.User, cli.cred.Pass)
 	}
 	if err != nil {
 		cli.cred = &Creds{ctx.GlobalString("addr"), ctx.GlobalString("user"), ctx.GlobalString("pass")}
-		if cli.c, err = pulse.NewClient(cli.cred.URL, cli.cred.User, cli.cred.Pass); err != nil {
-			cli.Err(err)
+		if cli.c, err = cli.Client(cli.cred.URL, cli.cred.User, cli.cred.Pass); err != nil {
+			return err
 		}
 	}
 	a, p, n := ctx.GlobalString("agent"), ctx.GlobalString("project"), ctx.GlobalInt("build")
 	if cli.a, err = regexp.Compile(a); err != nil {
-		cli.Err(err)
+		return err
 	}
 	if cli.p, err = regexp.Compile(p); err != nil {
-		cli.Err(err)
+		return err
 	}
 	cli.n = int64(n)
+	return nil
 }
 
 // Init TODO(rjeczalik): document
 func (cli *CLI) Init(ctx *cli.Context) {
-	cli.init(ctx)
+	if err := cli.init(ctx); err != nil {
+		cli.Err(err)
+		return
+	}
 	p, err := cli.c.Projects()
 	if err != nil {
 		cli.Err(err)
+		return
 	}
 	msg := make([]interface{}, 0, len(p))
 	for _, p := range p {
@@ -199,6 +206,7 @@ func (cli *CLI) Init(ctx *cli.Context) {
 		ok, err := cli.c.Init(p)
 		if err != nil {
 			cli.Err(err)
+			return
 		}
 		msg = append(msg, fmt.Sprintf("%v\t%q", ok, p))
 	}
@@ -207,10 +215,14 @@ func (cli *CLI) Init(ctx *cli.Context) {
 
 // Stages TODO(rjeczalik): document
 func (cli *CLI) Stages(ctx *cli.Context) {
-	cli.init(ctx)
+	if err := cli.init(ctx); err != nil {
+		cli.Err(err)
+		return
+	}
 	s, err := cli.c.Stages(cli.p.String())
 	if err != nil {
 		cli.Err(err)
+		return
 	}
 	msg := make([]interface{}, 0, len(s))
 	for _, s := range s {
@@ -221,40 +233,56 @@ func (cli *CLI) Stages(ctx *cli.Context) {
 
 // Build TODO(rjeczalik): document
 func (cli *CLI) Build(ctx *cli.Context) {
-	cli.init(ctx)
+	if err := cli.init(ctx); err != nil {
+		cli.Err(err)
+		return
+	}
 	reqID := ctx.Args().First()
 	if reqID == "" {
 		cli.Err("the request ID is missing")
+		return
 	}
 	id, err := cli.c.BuildID(reqID)
 	if err != nil {
 		cli.Err(err)
+		return
 	}
 	cli.Out(id)
 }
 
 // Login TODO(rjeczalik): document
 func (cli *CLI) Login(ctx *cli.Context) {
-	cli.init(ctx)
+	if err := cli.init(ctx); err != nil {
+		cli.Err(err)
+		return
+	}
 	old := []*string{&cli.cred.URL, &cli.cred.User, &cli.cred.Pass}
 	for i, s := range []string{ctx.GlobalString("addr"), ctx.GlobalString("user"), ctx.GlobalString("pass")} {
 		if s != "" {
 			(*old[i]) = s
 		}
 	}
-	cli.init(ctx)
-	if err := cli.s.Save(cli.cred); err != nil {
+	if err := cli.init(ctx); err != nil {
 		cli.Err(err)
+		return
+	}
+	if err := cli.Store.Save(cli.cred); err != nil {
+		cli.Err(err)
+		return
 	}
 	cli.Out()
 }
 
 // Trigger TODO(rjeczalik): document
 func (cli *CLI) Trigger(ctx *cli.Context) {
-	cli.init(ctx)
+	if err := cli.init(ctx); err != nil {
+		cli.Err(err)
+		return
+	}
 	p, err := cli.c.Projects()
 	if err != nil {
 		cli.Err(err)
+		return
 	}
 	msg := make([]interface{}, 0, len(p))
 	for _, p := range p {
@@ -263,10 +291,12 @@ func (cli *CLI) Trigger(ctx *cli.Context) {
 		}
 		if err = cli.c.Clear(p); err != nil {
 			cli.Err(err)
+			return
 		}
 		s, err := cli.c.Trigger(p)
 		if err != nil {
 			cli.Err(err)
+			return
 		}
 		for _, s := range s {
 			msg = append(msg, fmt.Sprintf("%s\t%q", s, p))
@@ -277,30 +307,85 @@ func (cli *CLI) Trigger(ctx *cli.Context) {
 
 // Health TODO(rjeczalik): document
 func (cli *CLI) Health(ctx *cli.Context) {
-	cli.init(ctx)
+	if err := cli.init(ctx); err != nil {
+		cli.Err(err)
+		return
+	}
+	if cli.p.String() != ".*" {
+		cli.healthProject(ctx)
+	} else {
+		cli.healthPulse(ctx)
+	}
+}
+
+func (cli *CLI) healthProject(ctx *cli.Context) {
+	p, err := cli.c.Projects()
+	if err != nil {
+		cli.Err(err)
+		return
+	}
+	all := make(map[string]pulse.Messages)
+	for _, p := range p {
+		if !cli.p.MatchString(p) {
+			continue
+		}
+		id, err := cli.GetBuildID(p, cli.n)
+		if err != nil {
+			cli.Err(err)
+			return
+		}
+		m, err := cli.c.Messages(p, id)
+		if err != nil {
+			cli.Err(err)
+			return
+		}
+		if m = m.FilterOut(pulse.Info); len(m) > 0 {
+			all[fmt.Sprintf("%s (build %d)", p, id)] = m
+		}
+	}
+	if len(all) == 0 {
+		cli.Out()
+	} else {
+		y, err := yaml.Marshal(all)
+		if err != nil {
+			cli.Err(err)
+			return
+		}
+		cli.Err(string(y))
+	}
+}
+
+func (cli *CLI) healthPulse(ctx *cli.Context) {
 	a, err := cli.c.Agents()
 	if err != nil {
 		cli.Err(err)
+		return
 	}
 	if len(a.Filter(pulse.Sync)) >= len(a)/2 {
 		cli.Err("Pulse Agents are hanging again!")
+		return
 	}
-	if a = a.Filter(pulse.Offline); len(a) > 0 {
+	if a = a.Filter(pulse.Offline); len(a) == 0 {
+		cli.Out()
+	} else {
 		msg := make([]interface{}, 0, len(a))
 		for i := range a {
 			msg = append(msg, a[i])
 		}
 		cli.Err(msg...)
 	}
-	cli.Out()
 }
 
 // Projects TODO(rjeczalik): document
 func (cli *CLI) Projects(ctx *cli.Context) {
-	cli.init(ctx)
+	if err := cli.init(ctx); err != nil {
+		cli.Err(err)
+		return
+	}
 	p, err := cli.c.Projects()
 	if err != nil {
 		cli.Err(err)
+		return
 	}
 	msg := make([]interface{}, 0, len(p))
 	for _, p := range p {
@@ -311,10 +396,14 @@ func (cli *CLI) Projects(ctx *cli.Context) {
 
 // Agents TODO(rjeczalik): document
 func (cli *CLI) Agents(ctx *cli.Context) {
-	cli.init(ctx)
+	if err := cli.init(ctx); err != nil {
+		cli.Err(err)
+		return
+	}
 	a, err := cli.c.Agents()
 	if err != nil {
 		cli.Err(err)
+		return
 	}
 	msg := make([]interface{}, 0, len(a))
 	for _, a := range a {
@@ -331,48 +420,56 @@ func (cli *CLI) Agents(ctx *cli.Context) {
 
 // Status TODO(rjeczalik): document
 func (cli *CLI) Status(ctx *cli.Context) {
-	cli.init(ctx)
+	if err := cli.init(ctx); err != nil {
+		cli.Err(err)
+		return
+	}
 	p, err := cli.c.Projects()
 	if err != nil {
 		cli.Err(err)
+		return
 	}
 	m := make(map[string][]pulse.BuildResult)
 	for _, p := range p {
 		if !cli.p.MatchString(p) {
 			continue
 		}
-		var (
-			b []pulse.BuildResult
-			n = cli.n
-		)
-		if n > 0 {
-			b, err = cli.c.BuildResult(p, n)
-		} else {
-			b, err = cli.c.LatestBuildResult(p)
-			if err != nil {
-				cli.Err(err)
-			}
-			var max int64
-			for i := range b {
-				if b[i].ID > max {
-					max = b[i].ID
-				}
-			}
-			if cli.n < 0 {
-				b, err = cli.c.BuildResult(p, max+n)
-			}
-			n = max + n
-		}
+		id, err := cli.GetBuildID(p, cli.n)
 		if err != nil {
 			cli.Err(err)
+			return
 		}
-		m[fmt.Sprintf("%s (build %d)", p, n)] = b
+		b, err := cli.c.BuildResult(p, id)
+		if err != nil {
+			cli.Err(err)
+			return
+		}
+		m[fmt.Sprintf("%s (build %d)", p, id)] = b
 	}
 	y, err := yaml.Marshal(m)
 	if err != nil {
 		cli.Err(err)
+		return
 	}
 	cli.Out(string(y))
+}
+
+// GetBuildID TODO(rjeczalik): document
+func (cli *CLI) GetBuildID(project string, id int64) (int64, error) {
+	if id > 0 {
+		return id, nil
+	}
+	b, err := cli.c.LatestBuildResult(project)
+	if err != nil {
+		return 0, err
+	}
+	var max int64
+	for i := range b {
+		if b[i].ID > max {
+			max = b[i].ID
+		}
+	}
+	return max + id, nil
 }
 
 // Run TODO(rjeczalik): document

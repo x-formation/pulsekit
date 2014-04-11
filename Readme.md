@@ -78,11 +78,39 @@ plain text, so be careful if others have access to your `$HOME` directory.
 0:0:OK
 ```
 
-###### Performing a health check
+###### Performing a health check against Pulse server
 
 ```
 ~ $ pulsecli --prtg health
 0:0:OK
+```
+
+###### Performing a health check against "LM-X - Tier 1" project
+
+The output is in the YAML format.
+
+```
+~ $ pulsecli -p 'LM-X - Tier 1' health
+LM-X - Tier 1 (build 1356):
+- severity: error
+  message: Recipe LM-X Unix failed
+  stagename: ""
+  commandname: ""
+  artifactname: ""
+  path: ""
+- severity: error
+  message: Recipe LM-X Windows failed
+  stagename: ""
+  commandname: ""
+  artifactname: ""
+  path: ""
+- severity: error
+  message: Command 'Run unittest_licserver' failed
+  stagename: Build - Windows x86
+  commandname: ""
+  artifactname: ""
+  path: ""
+...
 ```
 
 ###### Triggering builds for all the projects except LAC
@@ -187,6 +215,8 @@ pulse-win-9	 "Windows 8.1 - 9"
 ```
 
 ###### Getting status of the `LM-X - Release Build - Tier 2` project
+
+The output is in the YAML format.
 
 The `--build` or `-b` flag expects either:
 
