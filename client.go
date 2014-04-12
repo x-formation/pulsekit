@@ -9,21 +9,46 @@ import (
 	"github.com/kolo/xmlrpc"
 )
 
-// Client TODO(rjeczalik): document
+// Client is a RPC client for talking with Pulse Remote API endpoint.
+// It is expected that Client holds valid user session, which can be
+// terminated by a call to Close method.
 type Client interface {
+	// Agents returns every machine registred with Pulse server that the user
+	// holding the session has an access to.
 	Agents() (Agents, error)
+	// BuildID gives a build ID associated with given request ID. If a build
+	// is queued and not started yet it waits up to 15 seconds before timing out.
 	BuildID(reqid string) (int64, error)
+	// BuildResults gives full statistics and information for a build with given
+	// ID and project name.
 	BuildResult(project string, id int64) ([]BuildResult, error)
+	// Clear clears a working directories on agents for a given project name.
 	Clear(project string) error
+	// Close terminates the user session.
 	Close() error
+	// ConfigStage TODO(rjeczalik): document
 	ConfigStage(project, stage string) (ProjectStage, error)
+	// Init (re-)initializes the project with a given name. It stops the SCM polling,
+	// clears Pulse server's local clone of a repository, configured for
+	// a given project, and checks it out again.
 	Init(project string) (bool, error)
+	// LastestBuildResult returns statistics for a latest completed build of
+	// a given project.
 	LatestBuildResult(project string) ([]BuildResult, error)
+	// Messages returns all info, warning and error messages for a particular
+	// build of a given project.
 	Messages(project string, id int64) (Messages, error)
+	// Projects gives every project name that the user holding the session
+	// has an access to.
 	Projects() ([]string, error)
+	// Stages gives every stage name for a given project.
 	Stages(project string) ([]string, error)
+	// SetTimeout TODO(rjeczalik): document
 	SetTimeout(d time.Duration)
+	// SetConfigStage TODO(rjeczalik): document
 	SetConfigStage(project string, s ProjectStage) error
+	// Trigger triggers a build for a given project returning request IDs
+	// of builds caused by that trigger.
 	Trigger(project string) ([]string, error)
 }
 
@@ -47,7 +72,8 @@ type client struct {
 	d   time.Duration
 }
 
-// NewClient TODO(rjeczalik): document
+// NewClient authenticates with Pulse server for a user session, creating
+// a RPC client.
 func NewClient(url, user, pass string) (Client, error) {
 	c, err := &client{d: 15 * time.Second}, (error)(nil)
 	if c.rpc, err = xmlrpc.NewClient(url, nil); err != nil {
@@ -59,16 +85,13 @@ func NewClient(url, user, pass string) (Client, error) {
 	return c, nil
 }
 
-// SetTimeout TODO(rjeczalik): document
 func (c *client) SetTimeout(d time.Duration) { c.d = d }
 
-// Init TODO(rjeczalik): document
 func (c *client) Init(project string) (ok bool, err error) {
 	err = c.rpc.Call("RemoteApi.initialiseProject", []interface{}{c.tok, project}, &ok)
 	return
 }
 
-// Messages TODO(rjeczalik): document
 func (c *client) Messages(project string, id int64) (Messages, error) {
 	var (
 		m, warn, info Messages
@@ -86,21 +109,18 @@ func (c *client) Messages(project string, id int64) (Messages, error) {
 	return append(append(m, warn...), info...), nil
 }
 
-// ConfigStage TODO(rjeczalik): document
 func (c *client) ConfigStage(project, stage string) (s ProjectStage, err error) {
 	req := []interface{}{c.tok, fmt.Sprintf("projects/%s/stages/%s", project, stage)}
 	err = c.rpc.Call("RemoteApi.getConfig", req, &s)
 	return
 }
 
-// SetConfigStage TODO(rjeczalik): document
 func (c *client) SetConfigStage(project string, s ProjectStage) (err error) {
 	req := []interface{}{c.tok, fmt.Sprintf("projects/%s/stages/%s", project, s.Name), &s, false}
 	err = c.rpc.Call("RemoteApi.saveConfig", req, new(string))
 	return
 }
 
-// BuildID TODO(rjeczalik): document
 func (c *client) BuildID(reqid string) (int64, error) {
 	timeout, rep := int(c.d.Seconds())*1000, &BuildRequestStatus{}
 	err := c.rpc.Call("RemoteApi.waitForBuildRequestToBeActivated",
@@ -117,7 +137,6 @@ func (c *client) BuildID(reqid string) (int64, error) {
 	return strconv.ParseInt(rep.ID, 10, 64)
 }
 
-// BuildResult TODO(rjeczalik): document
 func (c *client) BuildResult(project string, id int64) (res []BuildResult, err error) {
 	if project == ProjectPersonal {
 		err = c.rpc.Call("RemoteApi.getPersonalBuild", []interface{}{c.tok, int(id)}, &res)
@@ -133,7 +152,6 @@ func (c *client) BuildResult(project string, id int64) (res []BuildResult, err e
 	return res, nil
 }
 
-// Stages TODO(rjeczalik): document
 func (c *client) Stages(project string) ([]string, error) {
 	// TODO(rjeczalik): It would be better to get stages list from project's configuration.
 	//                  I ran away screaming while trying to get that information from
@@ -155,7 +173,6 @@ func (c *client) Stages(project string) ([]string, error) {
 	return s, nil
 }
 
-// LatestBuildResult TODO(rjeczalik): document
 func (c *client) LatestBuildResult(project string) (res []BuildResult, err error) {
 	if project == ProjectPersonal {
 		err = c.rpc.Call("RemoteApi.getLatestPersonalBuildForProject", []interface{}{c.tok, true}, &res)
@@ -171,7 +188,6 @@ func (c *client) LatestBuildResult(project string) (res []BuildResult, err error
 	return res, nil
 }
 
-// Close TODO(rjeczalik): document
 func (c *client) Close() error {
 	if err := c.rpc.Call("RemoteApi.logout", c.tok, nil); err != nil {
 		return err
@@ -179,12 +195,10 @@ func (c *client) Close() error {
 	return c.rpc.Close()
 }
 
-// Clear TODO(rjeczalik): document
 func (c *client) Clear(project string) error {
 	return c.rpc.Call("RemoteApi.doConfigAction", []interface{}{c.tok, "projects/" + project, "clean"}, nil)
 }
 
-// Trigger TODO(rjeczalik): document
 func (c *client) Trigger(project string) (id []string, err error) {
 	// TODO(rjeczalik): Use TriggerOptions struct instead after kolo/xmlrpc
 	//                  supports maps.
@@ -195,13 +209,11 @@ func (c *client) Trigger(project string) (id []string, err error) {
 	return
 }
 
-// Projects TODO(rjeczalik): document
 func (c *client) Projects() (s []string, err error) {
 	err = c.rpc.Call("RemoteApi.getAllProjectNames", c.tok, &s)
 	return
 }
 
-// Agents TODO(rjeczalik): document
 func (c *client) Agents() (Agents, error) {
 	var names []string
 	if err := c.rpc.Call("RemoteApi.getAllAgentNames", c.tok, &names); err != nil {

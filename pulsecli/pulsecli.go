@@ -12,8 +12,6 @@ import (
 	"regexp"
 	"strings"
 	"time"
-
-	"github.com/x-formation/int-tools/pulseutil"
 	"github.com/x-formation/int-tools/pulseutil/prtg"
 	"github.com/x-formation/int-tools/pulseutil/pulsedev"
 	"github.com/x-formation/int-tools/pulseutil/util"
@@ -36,16 +34,19 @@ var defaultOut = func(args ...interface{}) {
 	os.Exit(0)
 }
 
-// Creds TODO(rjeczalik): document
+// Creds holds information required to authenticate an user session from
+// the Pulse Remote API endpoint.
 type Creds struct {
 	URL  string
 	User string
 	Pass string
 }
 
-// Login TODO(rjeczalik): document
+// CredsStore persists the Creds struct.
 type CredsStore interface {
+	// Load gives Creds loaded from a persisted storage.
 	Load() (*Creds, error)
+	// Save saves given Creds to a persisted storage.
 	Save(*Creds) error
 }
 
@@ -59,7 +60,6 @@ func config(mode int) (f *os.File, err error) {
 	return os.OpenFile(filepath.Join(u.HomeDir, ".pulsecli"), mode, 0644)
 }
 
-// Load TODO(rjeczalik): document
 func (fileStore) Load() (c *Creds, err error) {
 	f, err := config(os.O_RDONLY)
 	if err != nil {
@@ -77,7 +77,6 @@ func (fileStore) Load() (c *Creds, err error) {
 	return
 }
 
-// Save TODO(rjeczalik): document
 func (fileStore) Save(c *Creds) error {
 	f, err := config(os.O_TRUNC | os.O_CREATE | os.O_WRONLY)
 	if err != nil {
@@ -92,28 +91,33 @@ func (fileStore) Save(c *Creds) error {
 	return err
 }
 
-// New TODO(rjeczalik): document
+// CLI is a facade that implements cmd/pulsecli tool.
 type CLI struct {
+	// Client is used to communicate with a Pulse server.
 	Client func(url, user, pass string) (pulse.Client, error)
-	Dev    func(c pulse.Client, url, user, pass string) (pulsedev.Tool, error)
-	Out    func(...interface{})
-	Err    func(...interface{})
-	Store  CredsStore
-	app    *cli.App
-	cred   *Creds
-	c      pulse.Client
-	v      pulsedev.Tool
-	a      *regexp.Regexp
-	p      *regexp.Regexp
-	s      *regexp.Regexp
-	patch  string
-	rev    string
-	n      int64
-	d      time.Duration
-	prtg   bool
+	// Dev TODO(rjeczalik): document
+	Dev func(c pulse.Client, url, user, pass string) (pulsedev.Tool, error)
+	// Out terminates the application, writing to os.Stdout and calling os.Exit(0)
+	Out func(...interface{})
+	// Err terminates the application, writing to os.Stdout and calling os.Exit(1)
+	Err func(...interface{})
+	// Store is used to persist authorization information.
+	Store CredsStore
+	app   *cli.App
+	cred  *Creds
+	c     pulse.Client
+	v     pulsedev.Tool
+	a     *regexp.Regexp
+	p     *regexp.Regexp
+	s     *regexp.Regexp
+	patch string
+	rev   string
+	n     int64
+	d     time.Duration
+	prtg  bool
 }
 
-// New TODO(rjeczalik): document
+// New gives a new CLI, sets up command line handling and registers subcommands.
 func New() *CLI {
 	cl := &CLI{
 		Client: pulse.NewClient,
@@ -301,7 +305,10 @@ func (cli *CLI) Wait(ctx *cli.Context) {
 	}
 }
 
-// Init TODO(rjeczalik): document
+// Init is a a command line interface to Init method of a pulse.Client.
+// It outputs a pair of boolean and name, one per line for every project requested,
+// separated by a tab. Boolean value indicates whether initialization request
+// was accepted of rejected by Pulse server.
 func (cli *CLI) Init(ctx *cli.Context) {
 	if err := cli.init(ctx); err != nil {
 		cli.Err(err)
@@ -327,7 +334,9 @@ func (cli *CLI) Init(ctx *cli.Context) {
 	cli.Out(msg...)
 }
 
-// Stages TODO(rjeczalik): document
+// Stages is a command line interface to a Stages method of a pulse.Client.
+// It outputs names one per line and expectes an exact project name to be passed
+// through command line, not a regex.
 func (cli *CLI) Stages(ctx *cli.Context) {
 	if err := cli.init(ctx); err != nil {
 		cli.Err(err)
@@ -350,7 +359,7 @@ func (cli *CLI) Stages(ctx *cli.Context) {
 	cli.Out(msg...)
 }
 
-// Build TODO(rjeczalik): document
+// Build is a command line interface to a BuildID method of a pulse.Client.
 func (cli *CLI) Build(ctx *cli.Context) {
 	if err := cli.init(ctx); err != nil {
 		cli.Err(err)
@@ -369,7 +378,10 @@ func (cli *CLI) Build(ctx *cli.Context) {
 	cli.Out(id)
 }
 
-// Login TODO(rjeczalik): document
+// Login writes Pulse Remote API authentication information to a ~/.pulsecli file
+// in a YAML format. On consecutive runs it updates every non-empty field that is
+// passed from command line. It fails in doing so, when given credentials are not
+// valid.
 func (cli *CLI) Login(ctx *cli.Context) {
 	if err := cli.init(ctx); err != nil {
 		cli.Err(err)
@@ -392,7 +404,9 @@ func (cli *CLI) Login(ctx *cli.Context) {
 	cli.Out()
 }
 
-// Trigger TODO(rjeczalik): document
+// Trigger is a command line interface to a Trigger method of a pulse.Client.
+// It outputs pairs of a request ID and a project name one per line, for every
+// project requested. Values are separated by a tab.
 func (cli *CLI) Trigger(ctx *cli.Context) {
 	if err := cli.init(ctx); err != nil {
 		cli.Err(err)
@@ -424,7 +438,15 @@ func (cli *CLI) Trigger(ctx *cli.Context) {
 	cli.Out(msg...)
 }
 
-// Health TODO(rjeczalik): document
+// Health checks a status of a Pulse server or a project.
+// Pulse server health check fails when at least one agent is offline (meaning
+// that pulse-agent on that machine has died or communication went down) or at
+// least half of the agents are in synchronization state, which means Pulse server
+// has deadlocked because of whatever reasons (the most favorite is DNS handling,
+// apparently it is possible for a DNS request to not time out, which makes
+// all Pulse worker threads just stuck).
+// A project health check requests error and warning messages for latest build
+// of a given project, and fails when the list is not empty.
 func (cli *CLI) Health(ctx *cli.Context) {
 	if err := cli.init(ctx); err != nil {
 		cli.Err(err)
@@ -495,7 +517,8 @@ func (cli *CLI) healthPulse(ctx *cli.Context) {
 	}
 }
 
-// Projects TODO(rjeczalik): document
+// Projects is a command line interface to a Projects method of a pulse.Client.
+// It outputs a name for every project, one per line.
 func (cli *CLI) Projects(ctx *cli.Context) {
 	if err := cli.init(ctx); err != nil {
 		cli.Err(err)
@@ -513,7 +536,9 @@ func (cli *CLI) Projects(ctx *cli.Context) {
 	cli.Out(msg...)
 }
 
-// Agents TODO(rjeczalik): document
+// Agents is a command line interface to a Agents method of a pulse.Client.
+// It prints hostname-agentname pairs one per line for every agent.
+// It tries to extract the hostname from every agent's URL.
 func (cli *CLI) Agents(ctx *cli.Context) {
 	if err := cli.init(ctx); err != nil {
 		cli.Err(err)
@@ -532,12 +557,13 @@ func (cli *CLI) Agents(ctx *cli.Context) {
 				h = host
 			}
 		}
-		msg = append(msg, fmt.Sprintf("%s\t %q", h, a.Name))
+		msg = append(msg, fmt.Sprintf("%s\t%q", h, a.Name))
 	}
 	cli.Out(msg...)
 }
 
-// Status TODO(rjeczalik): document
+// Status is a command line interface to a BuildResult methos of a pulse.Client.
+// It outputs []BuildResult for every requested project in an YAML format.
 func (cli *CLI) Status(ctx *cli.Context) {
 	err := cli.init(ctx)
 	if err != nil {
@@ -576,7 +602,7 @@ func (cli *CLI) Status(ctx *cli.Context) {
 	cli.Out(string(y))
 }
 
-// Run TODO(rjeczalik): document
+// Run takes command line arguments and starts the application.
 func (cli *CLI) Run(args []string) {
 	cli.app.Run(args)
 }
