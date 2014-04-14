@@ -30,29 +30,32 @@ VERSION:
    0.1.0
 
 COMMANDS:
-   login    Creates or updates session for current user
-   trigger	Triggers a build
-   init		Initialises a project
-   health	Performs a health check
-   projects	Lists all projct names
-   stages	Lists all stage names
-   agents	Lists all agent names
-   status	Lists build's status
-   build    Gives build ID associated with given request ID
-   wait		Waits for a build to complete
-   help, h	Shows a list of commands or help for one command
+   login     Creates or updates session for current user
+   trigger	 Triggers a build
+   init		   Initialises a project
+   health	   Performs a health check
+   projects	 Lists all projct names
+   stages	   Lists all stage names
+   agents	   Lists all agent names
+   status	   Lists build's status
+   build     Gives build ID associated with given request ID
+   wait		   Waits for a build to complete
+   personal  Sends a personal build request
+   help, h	 Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
    --addr 'http://pulse/xmlrpc'	Pulse Remote API endpoint
-   --user ''             Pulse user name
-   --pass ''             Pulse user password
-   --agent, -a '.*'      Agent name patter
-   --project, -p '.*'    Project name pattern
-   --timeout, -t '15s'   Maximum wait time
-   --build, -b '0'       Build number
-   --prtg                PRTG-friendly output
-   --version, -v         print the version
-   --help, -h            show help
+   --user ''              Pulse user name
+   --pass ''              Pulse user password
+   --agent, -a '.*'       Agent name patter
+   --project, -p '.*'     Project name pattern
+   --timeout, -t '15s'    Maximum wait time
+   --patch ''             Patch file for a personal build
+   --revision, -r 'HEAD'  Revision to use for personal build
+   --build, -b '0'        Build number
+   --prtg                 PRTG-friendly output
+   --version, -v          print the version
+   --help, -h             show help
 ```
 
 #### PRTG output
@@ -87,7 +90,7 @@ plain text, so be careful if others have access to your `$HOME` directory.
 0:0:OK
 ```
 
-###### Perform a health check against "LM-X - Tier 1" project
+###### Perform a health check against `LM-X - Tier 1` project
 
 The output is in the YAML format.
 
@@ -115,7 +118,7 @@ LM-X - Tier 1 (build 1356):
 ...
 ```
 
-###### Trigger builds for all the projects except LAC
+###### Trigger builds for all the projects except `LAC`
 
 `trigger` outputs a list of `<request id>	<project name>` pairs, separated
 by a tab. In order to obtain the build ID run `pulsecli build <request id>`.
@@ -138,7 +141,7 @@ by a tab. In order to obtain the build ID run `pulsecli build <request id>`.
 2249380	"Puppet Node Tests"
 ```
 
-###### Wait for the build triggered by request ID 2248358 to complete
+###### Wait for the build triggered by request ID `2248358` to complete
 
 ```
 ~ $ pulsecli -p 'Go - Database' -b 2248358 wait
@@ -150,14 +153,21 @@ by a tab. In order to obtain the build ID run `pulsecli build <request id>`.
 ~ $ pulsecli -p 'Pulse CLI' trigger | xargs printf -- '-b %d -p \"%s\"\n' | parallel -- eval "pulsecli -t 1m {} wait"
 ```
 
-###### Obtain a build ID for the 2260289 request ID
+###### Request a personal build for `review-1234.diff` and `Pulse CLI` project
+
+```
+~ $ pulsecli -p 'Pulse CLI' --patch review-1234.diff personal
+542
+```
+
+###### Obtain a build ID for the `2260289` request ID
 
 ```
 ~ $ pulsecli build 2260289
 130
 ```
 
-###### Trigger a build for all LM-X tiers
+###### Trigger a build for all `LM-X` tiers
 
 ```
 ~ $ pulsecli --project 'LM-X - Tier' trigger
@@ -166,7 +176,7 @@ by a tab. In order to obtain the build ID run `pulsecli build <request id>`.
 ```
 
 
-###### Initialise all projects within 'Pulse CLI' group
+###### Initialise all projects within `Pulse CLI` group
 
 ```
 ~ $ pulsecli --project 'Pulse CLI' init
@@ -193,7 +203,7 @@ License Activation Center - Accept SOAP
 License Activation Center - Accept REST
 ```
 
-###### List all the stages for the 'License Activation Center - API' project
+###### List all the stages for the `License Activation Center - API` project
 
 ```
 ~ $ pulsecli --project 'License Activation Center - API' stages

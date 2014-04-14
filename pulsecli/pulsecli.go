@@ -10,10 +10,12 @@ import (
 	"os/user"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/x-formation/int-tools/pulseutil"
 	"github.com/x-formation/int-tools/pulseutil/prtg"
+	"github.com/x-formation/int-tools/pulseutil/pulsedev"
 	"github.com/x-formation/int-tools/pulseutil/util"
 
 	"github.com/codegangsta/cli"
@@ -63,6 +65,7 @@ func (fileStore) Load() (c *Creds, err error) {
 	if err != nil {
 		return
 	}
+	defer f.Close()
 	c = &Creds{}
 	var b bytes.Buffer
 	if _, err = io.Copy(&b, f); err != nil {
@@ -80,6 +83,7 @@ func (fileStore) Save(c *Creds) error {
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 	b, err := yaml.Marshal(c)
 	if err != nil {
 		return err
@@ -91,23 +95,28 @@ func (fileStore) Save(c *Creds) error {
 // New TODO(rjeczalik): document
 type CLI struct {
 	Client func(url, user, pass string) (pulse.Client, error)
+	Dev    func(c pulse.Client, url, user, pass string) (pulsedev.Tool, error)
 	Out    func(...interface{})
 	Err    func(...interface{})
 	Store  CredsStore
 	app    *cli.App
+	cred   *Creds
 	c      pulse.Client
+	v      pulsedev.Tool
 	a      *regexp.Regexp
 	p      *regexp.Regexp
+	patch  string
+	rev    string
 	n      int64
 	d      time.Duration
 	prtg   bool
-	cred   *Creds
 }
 
 // New TODO(rjeczalik): document
 func New() *CLI {
 	cl := &CLI{
 		Client: pulse.NewClient,
+		Dev:    pulsedev.New,
 		Store:  fileStore{},
 		Err:    defaultErr,
 		Out:    defaultOut,
@@ -118,12 +127,14 @@ func New() *CLI {
 	cl.app.Usage = "a command-line client for a Pulse server"
 	cl.app.Flags = []cli.Flag{
 		cli.StringFlag{Name: "addr", Value: "http://pulse/xmlrpc", Usage: "Pulse Remote API endpoint"},
-		cli.StringFlag{Name: "user", Value: "", Usage: "Pulse user name"},
-		cli.StringFlag{Name: "pass", Value: "", Usage: "Pulse user password"},
+		cli.StringFlag{Name: "user", Usage: "Pulse user name"},
+		cli.StringFlag{Name: "pass", Usage: "Pulse user password"},
 		cli.StringFlag{Name: "agent, a", Value: ".*", Usage: "Agent name patter"},
 		cli.StringFlag{Name: "project, p", Value: ".*", Usage: "Project name pattern"},
 		cli.StringFlag{Name: "timeout, t", Value: "15s", Usage: "Maximum wait time"},
-		cli.IntFlag{Name: "build, b", Value: 0, Usage: "Build number"},
+		cli.StringFlag{Name: "patch", Usage: "Patch file for a personal build"},
+		cli.StringFlag{Name: "revision, r", Value: "HEAD", Usage: "Revision to use for personal build"},
+		cli.IntFlag{Name: "build, b", Usage: "Build number"},
 		cli.BoolFlag{Name: "prtg", Usage: "PRTG-friendly output"},
 	}
 	cl.app.Commands = []cli.Command{{
@@ -166,6 +177,10 @@ func New() *CLI {
 		Name:   "wait",
 		Usage:  "Waits for a build to complete",
 		Action: cl.Wait,
+	}, {
+		Name:   "personal",
+		Usage:  "Sends a personal build request",
+		Action: cl.Personal,
 	}}
 	return cl
 }
@@ -184,7 +199,7 @@ func (cli *CLI) init(ctx *cli.Context) error {
 			return err
 		}
 	}
-	a, p := ctx.GlobalString("agent"), ctx.GlobalString("project")
+	a, p, r := ctx.GlobalString("agent"), ctx.GlobalString("project"), ctx.GlobalString("revision")
 	if cli.a, err = regexp.Compile(a); err != nil {
 		return err
 	}
@@ -197,7 +212,43 @@ func (cli *CLI) init(ctx *cli.Context) error {
 	}
 	cli.n = int64(n)
 	cli.c.SetTimeout(cli.d)
+	cli.rev = r
 	return nil
+}
+
+// Personal TODO(rjeczalik): document
+func (cli *CLI) Personal(ctx *cli.Context) {
+	err := cli.init(ctx)
+	if err != nil {
+		cli.Err(err)
+		return
+	}
+	if p := ctx.GlobalString("patch"); p != "" {
+		if _, err := os.Open(p); err != nil {
+			cli.Err(err)
+			return
+		}
+		cli.patch = p
+	}
+	url := cli.cred.URL
+	if n := strings.Index(cli.cred.URL, "/xmlrpc"); n != -1 {
+		url = url[:n]
+	}
+	if cli.v, err = cli.Dev(cli.c, url, cli.cred.User, cli.cred.Pass); err != nil {
+		cli.Err(err)
+		return
+	}
+	p := &pulsedev.Personal{
+		Patch:    cli.patch,
+		Project:  cli.p.String(),
+		Revision: cli.rev,
+	}
+	id, err := cli.v.Personal(p)
+	if err != nil {
+		cli.Err(err)
+		return
+	}
+	cli.Out(id)
 }
 
 // Wait TODO(rjeczalik): document

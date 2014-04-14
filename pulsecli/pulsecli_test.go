@@ -147,6 +147,10 @@ func TestFileStore(t *testing.T) {
 	t.Skip("TODO(rjeczalik)")
 }
 
+func TestPersonal(t *testing.T) {
+	t.Skip("TODO(rjeczalik)")
+}
+
 func TestWait(t *testing.T) {
 	mc, mcli, f := fixture()
 	mc.Err = make([]error, 2)
