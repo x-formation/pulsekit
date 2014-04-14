@@ -10,9 +10,11 @@ import (
 	"os/user"
 	"path/filepath"
 	"regexp"
+	"time"
 
 	"github.com/x-formation/int-tools/pulseutil"
 	"github.com/x-formation/int-tools/pulseutil/prtg"
+	"github.com/x-formation/int-tools/pulseutil/util"
 
 	"github.com/codegangsta/cli"
 	"gopkg.in/v1/yaml"
@@ -97,6 +99,7 @@ type CLI struct {
 	a      *regexp.Regexp
 	p      *regexp.Regexp
 	n      int64
+	d      time.Duration
 	prtg   bool
 	cred   *Creds
 }
@@ -119,6 +122,7 @@ func New() *CLI {
 		cli.StringFlag{Name: "pass", Value: "", Usage: "Pulse user password"},
 		cli.StringFlag{Name: "agent, a", Value: ".*", Usage: "Agent name patter"},
 		cli.StringFlag{Name: "project, p", Value: ".*", Usage: "Project name pattern"},
+		cli.StringFlag{Name: "timeout, t", Value: "15s", Usage: "Maximum wait time"},
 		cli.IntFlag{Name: "build, b", Value: 0, Usage: "Build number"},
 		cli.BoolFlag{Name: "prtg", Usage: "PRTG-friendly output"},
 	}
@@ -158,6 +162,10 @@ func New() *CLI {
 		Name:   "build",
 		Usage:  "Gives build ID associated with given request ID",
 		Action: cl.Build,
+	}, {
+		Name:   "wait",
+		Usage:  "Waits for a build to complete",
+		Action: cl.Wait,
 	}}
 	return cl
 }
@@ -176,15 +184,47 @@ func (cli *CLI) init(ctx *cli.Context) error {
 			return err
 		}
 	}
-	a, p, n := ctx.GlobalString("agent"), ctx.GlobalString("project"), ctx.GlobalInt("build")
+	a, p := ctx.GlobalString("agent"), ctx.GlobalString("project")
 	if cli.a, err = regexp.Compile(a); err != nil {
 		return err
 	}
 	if cli.p, err = regexp.Compile(p); err != nil {
 		return err
 	}
+	n, t := ctx.GlobalInt("build"), ctx.GlobalString("timeout")
+	if cli.d, err = time.ParseDuration(t); err != nil {
+		return err
+	}
 	cli.n = int64(n)
+	cli.c.SetTimeout(cli.d)
 	return nil
+}
+
+// Wait TODO(rjeczalik): document
+func (cli *CLI) Wait(ctx *cli.Context) {
+	if err := cli.init(ctx); err != nil {
+		cli.Err(err)
+		return
+	}
+	p := cli.p.String()
+	if p == "" || p == ".*" {
+		cli.Err("pulsecli: a --project name is missing")
+		return
+	}
+	id, err := util.NormalizeBuildOrRequestID(cli.c, p, cli.n)
+	if err != nil {
+		cli.Err(err)
+		return
+	}
+	select {
+	case <-time.After(cli.d):
+		err = pulse.ErrTimeout
+	case err = <-util.Wait(cli.c, time.Second, p, id):
+	}
+	if err != nil {
+		cli.Err(err)
+		return
+	}
 }
 
 // Init TODO(rjeczalik): document
@@ -239,7 +279,7 @@ func (cli *CLI) Build(ctx *cli.Context) {
 	}
 	reqID := ctx.Args().First()
 	if reqID == "" {
-		cli.Err("the request ID is missing")
+		cli.Err("pulsecli: a request ID is missing")
 		return
 	}
 	id, err := cli.c.BuildID(reqID)
@@ -311,7 +351,8 @@ func (cli *CLI) Health(ctx *cli.Context) {
 		cli.Err(err)
 		return
 	}
-	if cli.p.String() != ".*" {
+	p := cli.p.String()
+	if p != "" && p != ".*" {
 		cli.healthProject(ctx)
 	} else {
 		cli.healthPulse(ctx)
@@ -329,7 +370,7 @@ func (cli *CLI) healthProject(ctx *cli.Context) {
 		if !cli.p.MatchString(p) {
 			continue
 		}
-		id, err := cli.GetBuildID(p, cli.n)
+		id, err := util.NormalizeBuildOrRequestID(cli.c, p, cli.n)
 		if err != nil {
 			cli.Err(err)
 			return
@@ -362,7 +403,7 @@ func (cli *CLI) healthPulse(ctx *cli.Context) {
 		return
 	}
 	if len(a.Filter(pulse.Sync)) >= len(a)/2 {
-		cli.Err("Pulse Agents are hanging again!")
+		cli.Err("pulsecli: >=50% of Pulse agents are hanging now!")
 		return
 	}
 	if a = a.Filter(pulse.Offline); len(a) == 0 {
@@ -434,7 +475,7 @@ func (cli *CLI) Status(ctx *cli.Context) {
 		if !cli.p.MatchString(p) {
 			continue
 		}
-		id, err := cli.GetBuildID(p, cli.n)
+		id, err := util.NormalizeBuildOrRequestID(cli.c, p, cli.n)
 		if err != nil {
 			cli.Err(err)
 			return
@@ -452,24 +493,6 @@ func (cli *CLI) Status(ctx *cli.Context) {
 		return
 	}
 	cli.Out(string(y))
-}
-
-// GetBuildID TODO(rjeczalik): document
-func (cli *CLI) GetBuildID(project string, id int64) (int64, error) {
-	if id > 0 {
-		return id, nil
-	}
-	b, err := cli.c.LatestBuildResult(project)
-	if err != nil {
-		return 0, err
-	}
-	var max int64
-	for i := range b {
-		if b[i].ID > max {
-			max = b[i].ID
-		}
-	}
-	return max + id, nil
 }
 
 // Run TODO(rjeczalik): document

@@ -2,6 +2,7 @@ package pulse
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -20,13 +21,28 @@ type Client interface {
 	Messages(project string, id int64) (Messages, error)
 	Projects() ([]string, error)
 	Stages(project string) ([]string, error)
+	SetTimeout(d time.Duration)
 	Trigger(project string) ([]string, error)
-	WaitBuild(project string, id int64) <-chan struct{}
+}
+
+var ErrTimeout = errors.New("pulse: request has timed out")
+
+// InvalidBuildError TODO(rjeczalik): document
+type InvalidBuildError struct {
+	ID     int64
+	Status BuildStatus
+	ReqID  string
+}
+
+func (e InvalidBuildError) Error() string {
+	return fmt.Sprintf("pulse: invalid build: id=%d, status=%s, reqid=%s", e.ID,
+		e.Status, e.ReqID)
 }
 
 type client struct {
 	rpc *xmlrpc.Client
 	tok string
+	d   time.Duration
 }
 
 // NewClient TODO(rjeczalik): document
@@ -40,6 +56,9 @@ func NewClient(url, user, pass string) (Client, error) {
 	}
 	return c, nil
 }
+
+// SetTimeout TODO(rjeczalik): document
+func (c *client) SetTimeout(d time.Duration) { c.d = d }
 
 // Init TODO(rjeczalik): document
 func (c *client) Init(project string) (ok bool, err error) {
@@ -67,17 +86,17 @@ func (c *client) Messages(project string, id int64) (Messages, error) {
 
 // BuildID TODO(rjeczalik): document
 func (c *client) BuildID(reqid string) (int64, error) {
-	// TODO(rjeczalik): Extend Client interface with SetDeadline() method which
-	//                  will configure both timeouts - for Pulse API and for
-	//                  *rpc.Client from net/rpc.
-	timeout, rep := 15*1000, &BuildRequestStatus{}
+	timeout, rep := int(c.d.Seconds())*1000, &BuildRequestStatus{}
 	err := c.rpc.Call("RemoteApi.waitForBuildRequestToBeActivated",
 		[]interface{}{c.tok, reqid, timeout}, &rep)
 	if err != nil {
 		return 0, err
 	}
+	if rep.Status == BuildUnknown {
+		return 0, &InvalidBuildError{Status: BuildUnknown, ReqID: reqid}
+	}
 	if rep.Status == BuildUnhandled || rep.Status == BuildQueued {
-		return 0, errors.New("pulse: requesting build ID has timed out")
+		return 0, ErrTimeout
 	}
 	return strconv.ParseInt(rep.ID, 10, 64)
 }
@@ -88,6 +107,9 @@ func (c *client) BuildResult(project string, id int64) ([]BuildResult, error) {
 	err := c.rpc.Call("RemoteApi.getBuild", []interface{}{c.tok, project, int(id)}, &build)
 	if err != nil {
 		return nil, err
+	}
+	if build == nil || len(build) == 0 {
+		return nil, &InvalidBuildError{ID: id, Status: BuildUnknown}
 	}
 	return build, nil
 }
@@ -122,38 +144,6 @@ func (c *client) LatestBuildResult(project string) ([]BuildResult, error) {
 		return nil, err
 	}
 	return build, nil
-}
-
-// WaitBuild TODO(rjeczalik): document
-func (c *client) WaitBuild(project string, id int64) <-chan struct{} {
-	done, sleep := make(chan struct{}), 250*time.Millisecond
-	go func() {
-		build, retry := make([]BuildResult, 0), 3
-	WaitLoop:
-		for {
-			build = build[:0]
-			err := c.rpc.Call("RemoteApi.getBuild", []interface{}{c.tok, project,
-				int(id)}, &build)
-			if err != nil {
-				if retry > 0 {
-					retry -= 1
-					time.Sleep(sleep)
-					continue WaitLoop
-				}
-				close(done)
-				return
-			}
-			for i := range build {
-				if !build[i].Complete {
-					time.Sleep(sleep)
-					continue WaitLoop
-				}
-			}
-			close(done)
-			return
-		}
-	}()
-	return done
 }
 
 // Close TODO(rjeczalik): document

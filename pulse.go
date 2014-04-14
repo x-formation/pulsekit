@@ -95,26 +95,3 @@ func (m Messages) FilterOut(pred ...func(*Message) bool) Messages {
 	}
 	return m.Filter(notpred...)
 }
-
-// Pending TODO(rjeczalik): document
-func Pending(v interface{}) bool {
-	switch v := v.(type) {
-	case *BuildResult:
-		return Pending(&v.Stages)
-	case *[]BuildResult:
-		for i := range *v {
-			if Pending(&(*v)[i].Stages) {
-				return true
-			}
-		}
-	case *StageResult:
-		return v.Agent == AgentPending
-	case *[]StageResult:
-		for i := range *v {
-			if Pending(&(*v)[i]) {
-				return true
-			}
-		}
-	}
-	return false
-}

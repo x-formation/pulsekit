@@ -1,12 +1,15 @@
 package pulsecli
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/x-formation/int-tools/pulseutil"
+	"github.com/x-formation/int-tools/pulseutil/mock"
 
 	"github.com/codegangsta/cli"
 )
@@ -17,6 +20,7 @@ type Flags struct {
 	Pass    string
 	Agent   string
 	Project string
+	Timeout time.Duration
 	Build   int
 	Prtg    bool
 }
@@ -28,63 +32,11 @@ func newFlags() *Flags {
 		URL:     "http://pulse/xmlrpc",
 		Agent:   ".*",
 		Project: ".*",
+		Timeout: 15 * time.Second,
 	}
 }
 
-type MockClient struct {
-	Err []error
-	A   pulse.Agents
-	BI  int64
-	BR  []pulse.BuildResult
-	I   bool
-	L   []pulse.BuildResult
-	M   pulse.Messages
-	P   []string
-	S   []string
-	T   []string
-	W   <-chan struct{}
-	i   int
-}
-
-func (mc *MockClient) Error() error {
-	if mc.i != len(mc.Err) {
-		return fmt.Errorf("pulsecli test: expected Mock to be called %d times,"+
-			" was called %d times instead", len(mc.Err), mc.i)
-	}
-	return nil
-}
-
-func (mc *MockClient) err() error {
-	i := mc.i
-	mc.i++
-	if mc.Err == nil || len(mc.Err) <= i {
-		return nil
-	}
-	return mc.Err[i]
-}
-
-func (mc *MockClient) Agents() (pulse.Agents, error)       { return mc.A, mc.err() }
-func (mc *MockClient) BuildID(reqid string) (int64, error) { return mc.BI, mc.err() }
-func (mc *MockClient) BuildResult(project string, id int64) ([]pulse.BuildResult, error) {
-	return mc.BR, mc.err()
-}
-func (mc *MockClient) Clear(project string) error        { return mc.err() }
-func (mc *MockClient) Close() error                      { return mc.err() }
-func (mc *MockClient) Init(project string) (bool, error) { return mc.I, mc.err() }
-func (mc *MockClient) LatestBuildResult(project string) ([]pulse.BuildResult, error) {
-	return mc.L, mc.err()
-}
-func (mc *MockClient) Messages(project string, id int64) (pulse.Messages, error) {
-	return mc.M, mc.err()
-}
-func (mc *MockClient) Projects() ([]string, error)                        { return mc.P, mc.err() }
-func (mc *MockClient) Stages(project string) ([]string, error)            { return mc.S, mc.err() }
-func (mc *MockClient) Trigger(project string) ([]string, error)           { return mc.T, mc.err() }
-func (mc *MockClient) WaitBuild(project string, id int64) <-chan struct{} { return mc.W }
-
-func NewMockClient() *MockClient {
-	return &MockClient{}
-}
+var errInvalidBuild = &pulse.InvalidBuildError{Status: pulse.BuildUnknown}
 
 type MockCLI struct {
 	cli *CLI
@@ -97,9 +49,17 @@ func (mcli *MockCLI) ctx() *cli.Context {
 	g.String("pass", mcli.f.Pass, "")
 	g.String("agent", mcli.f.Agent, "")
 	g.String("project", mcli.f.Project, "")
+	g.String("timeout", mcli.f.Timeout.String(), "")
 	g.Int("build", mcli.f.Build, "")
 	g.Bool("prtg", mcli.f.Prtg, "")
 	return cli.NewContext(mcli.cli.app, nil, g)
+}
+
+func (mcli *MockCLI) Wait() (out []interface{}, err []interface{}) {
+	mcli.cli.Out = func(i ...interface{}) { out = i }
+	mcli.cli.Err = func(i ...interface{}) { err = i }
+	mcli.cli.Wait(mcli.ctx())
+	return
 }
 
 func (mcli *MockCLI) Login() (out []interface{}, err []interface{}) {
@@ -165,19 +125,19 @@ func (mcli *MockCLI) Build() (out []interface{}, err []interface{}) {
 	return
 }
 
-func NewMockCLI(mc *MockClient) *MockCLI {
+func NewMockCLI(c pulse.Client) *MockCLI {
 	mcli := &MockCLI{
 		cli: New(),
 		f:   newFlags(),
 	}
 	mcli.cli.Client = func(_, _, _ string) (pulse.Client, error) {
-		return mc, nil
+		return c, nil
 	}
 	return mcli
 }
 
-func fixture() (mc *MockClient, mcli *MockCLI, f *Flags) {
-	mc = NewMockClient()
+func fixture() (mc *mock.Client, mcli *MockCLI, f *Flags) {
+	mc = mock.NewClient()
 	mcli = NewMockCLI(mc)
 	f = mcli.f
 	return
@@ -185,6 +145,77 @@ func fixture() (mc *MockClient, mcli *MockCLI, f *Flags) {
 
 func TestFileStore(t *testing.T) {
 	t.Skip("TODO(rjeczalik)")
+}
+
+func TestWait(t *testing.T) {
+	mc, mcli, f := fixture()
+	mc.Err = make([]error, 2)
+	f.Build, f.Project, f.Timeout = 3, "Pulse CLI", time.Second
+	out, err := mcli.Wait()
+	mc.Check(t)
+	if out != nil && len(out) != 0 {
+		t.Error("expected out to be empty")
+	}
+	if err != nil && len(err) != 0 {
+		t.Error("expected err to be empty")
+	}
+}
+
+func TestWait_MissingProject(t *testing.T) {
+	mc, mcli, f := fixture()
+	f.Timeout = time.Second
+	out, err := mcli.Wait()
+	mc.Check(t)
+	if out != nil && len(out) != 0 {
+		t.Error("expected out to be empty")
+	}
+	if err == nil || len(err) == 0 {
+		t.Error("expected err to not be empty")
+	}
+}
+
+func TestWait_NormalizeErr(t *testing.T) {
+	mc, mcli, f := fixture()
+	mc.Err = []error{errors.New("err")}
+	f.Build, f.Timeout, f.Project = 0, time.Second, "Pulse CLI"
+	out, err := mcli.Wait()
+	mc.Check(t)
+	if out != nil && len(out) != 0 {
+		t.Error("expected out to be empty")
+	}
+	if err == nil || len(err) != 1 {
+		t.Fatalf("expected err!=nil, len(err)=1; was err=%v, len(err)=%d",
+			err, len(err))
+	}
+	e, ok := err[0].(error)
+	if !ok {
+		t.Fatalf("expecred err[0] to be of error type, was %T instead", err[0])
+	}
+	if e == nil {
+		t.Error("expected e to be non-nil")
+	}
+}
+
+func TestWait_Timeout(t *testing.T) {
+	mc, mcli, f := fixture()
+	mc.Err, mc.BR = []error{nil, nil}, []pulse.BuildResult{{Complete: false}}
+	f.Build, f.Timeout, f.Project = 1, 50*time.Millisecond, "Pulse CLI"
+	out, err := mcli.Wait()
+	mc.Check(t)
+	if out != nil && len(out) != 0 {
+		t.Error("expected out to be empty")
+	}
+	if err == nil || len(err) != 1 {
+		t.Fatalf("expected err!=nil, len(err)=1; was err=%v, len(err)=%d",
+			err, len(err))
+	}
+	e, ok := err[0].(error)
+	if !ok {
+		t.Fatalf("expecred err[0] to be of error type, was %T instead", err[0])
+	}
+	if e != pulse.ErrTimeout {
+		t.Errorf("expected e to be pulse.ErrTimeout, was %q instead", e)
+	}
 }
 
 func TestInit(t *testing.T) {
@@ -209,7 +240,7 @@ func TestTrigger(t *testing.T) {
 
 func TestHealthProject(t *testing.T) {
 	mc, mcli, f := fixture()
-	mc.Err = make([]error, 5)
+	mc.Err = make([]error, 7)
 	mc.M = []pulse.Message{
 		{Severity: pulse.SeverityError, Message: "error #1"},
 		{Severity: pulse.SeverityWarning, Message: "warn #1"},
@@ -239,9 +270,7 @@ func TestHealthProject(t *testing.T) {
 		string(pulse.SeverityInfo),
 	}
 	out, err := mcli.Health()
-	if err := mc.Error(); err != nil {
-		t.Errorf("%v", err)
-	}
+	mc.Check(t)
 	if out != nil && len(out) > 0 {
 		t.Errorf("expected out to be empty, was %v instead", err)
 	}
