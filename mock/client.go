@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -20,16 +21,21 @@ type Client struct {
 	T   []string
 	D   time.Duration
 	i   int
+	rw  sync.RWMutex
 }
 
 func (c *Client) Check(t *testing.T) {
+	c.rw.RLock()
 	if c.i != len(c.Err) {
 		t.Errorf("mock: expected to be called %d times, was called %d times instead",
 			len(c.Err), c.i)
 	}
+	c.rw.RUnlock()
 }
 
 func (c *Client) err() error {
+	c.rw.Lock()
+	defer c.rw.Unlock()
 	i := c.i
 	c.i++
 	if c.Err == nil || len(c.Err) <= i {

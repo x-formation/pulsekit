@@ -47,7 +47,7 @@ type client struct {
 
 // NewClient TODO(rjeczalik): document
 func NewClient(url, user, pass string) (Client, error) {
-	c, err := &client{}, (error)(nil)
+	c, err := &client{d: 15 * time.Second}, (error)(nil)
 	if c.rpc, err = xmlrpc.NewClient(url, nil); err != nil {
 		return nil, err
 	}
