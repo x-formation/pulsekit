@@ -38,7 +38,7 @@ COMMANDS:
    stages	Lists all stage names
    agents	Lists all agent names
    status	Lists build's status
-   build	   Gives build ID associated with given request ID
+   build    Gives build ID associated with given request ID
    wait		Waits for a build to complete
    help, h	Shows a list of commands or help for one command
 
