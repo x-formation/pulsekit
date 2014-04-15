@@ -30,7 +30,7 @@ VERSION:
    0.1.0
 
 COMMANDS:
-   login	Creates or updates session for current user
+   login    Creates or updates session for current user
    trigger	Triggers a build
    init		Initialises a project
    health	Performs a health check
@@ -38,21 +38,21 @@ COMMANDS:
    stages	Lists all stage names
    agents	Lists all agent names
    status	Lists build's status
-   build	Gives build ID associated with given request ID
+   build	   Gives build ID associated with given request ID
    wait		Waits for a build to complete
    help, h	Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
    --addr 'http://pulse/xmlrpc'	Pulse Remote API endpoint
-   --user ''			Pulse user name
-   --pass ''			Pulse user password
-   --agent, -a '.*'		Agent name patter
-   --project, -p '.*'		Project name pattern
-   --timeout, -t '15s'		Maximum wait time
-   --build, -b '0'		Build number
-   --prtg			PRTG-friendly output
-   --version, -v		print the version
-   --help, -h			show help
+   --user ''             Pulse user name
+   --pass ''             Pulse user password
+   --agent, -a '.*'      Agent name patter
+   --project, -p '.*'    Project name pattern
+   --timeout, -t '15s'   Maximum wait time
+   --build, -b '0'       Build number
+   --prtg                PRTG-friendly output
+   --version, -v         print the version
+   --help, -h            show help
 ```
 
 #### PRTG output
