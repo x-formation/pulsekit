@@ -13,6 +13,7 @@ import (
 	"github.com/x-formation/int-tools/pulseutil/mock"
 
 	"github.com/codegangsta/cli"
+	"gopkg.in/v1/yaml"
 )
 
 type Flags struct {
@@ -422,13 +423,121 @@ func TestHealthPulseErr_Offline(t *testing.T) {
 }
 
 func TestProjects(t *testing.T) {
-	t.Skip("TODO(rjeczalik)")
+	mc, mcli, _ := fixture()
+	mc.Err, mc.P = make([]error, 1), []string{"Pulse CLI"}
+	expected := mc.P[0]
+	out, err := mcli.Projects()
+	mc.Check(t)
+	if out == nil && len(out) != 1 {
+		t.Error("expected out to not be empty")
+	}
+	if err != nil && len(err) != 0 {
+		t.Error("expected err to be empty")
+	}
+	s, ok := out[0].(string)
+	if !ok {
+		t.Fatalf("expected out[0] to be of string type, was %T instead", out[0])
+	}
+	if expected != s {
+		t.Errorf("expected %s, got %s", expected, s)
+	}
+}
+
+func TestProjects_Empty(t *testing.T) {
+	mc, mcli, _ := fixture()
+	mc.Err = make([]error, 1)
+	out, err := mcli.Projects()
+	mc.Check(t)
+	if out != nil && len(out) != 0 {
+		t.Error("expected out to be empty")
+	}
+	if err != nil && len(err) != 0 {
+		t.Error("expected err to be empty")
+	}
 }
 
 func TestAgents(t *testing.T) {
-	t.Skip("TODO(rjeczalik)")
+	mc, mcli, _ := fixture()
+	mc.Err = make([]error, 1)
+	mc.A = pulse.Agents{pulse.Agent{Name: "Agent1", Status: pulse.AgentIdle, Host: "Host1"}}
+	expected := fmt.Sprintf("%s\t %q", "Host1", "Agent1")
+	out, err := mcli.Agents()
+	mc.Check(t)
+	if out == nil && len(out) != 1 {
+		t.Error("expected out to not be empty")
+	}
+	if err != nil && len(err) != 0 {
+		t.Error("expected err to be empty")
+	}
+	s, ok := out[0].(string)
+	if !ok {
+		t.Fatalf("expected out[0] to be of string type, was %T instead", out[0])
+	}
+	if expected != s {
+		t.Errorf("expected %s, got %s", expected, s)
+	}
+}
+
+func TestAgents_Empty(t *testing.T) {
+	mc, mcli, _ := fixture()
+	mc.Err = make([]error, 1)
+	out, err := mcli.Agents()
+	mc.Check(t)
+	if out != nil && len(out) != 0 {
+		t.Error("expected out to be empty")
+	}
+	if err != nil && len(err) != 0 {
+		t.Error("expected err to be empty")
+	}
 }
 
 func TestStatus(t *testing.T) {
-	t.Skip("TODO(rjeczalik)")
+	mc, mcli, f := fixture()
+	mc.Err, mc.P = make([]error, 3), []string{"LM-X"}
+	f.Build = 1
+	out, err := mcli.Status()
+	mc.Check(t)
+
+	if out == nil || len(out) != 1 {
+		t.Error("expected out to not be empty")
+	}
+	if err != nil && len(err) != 0 {
+		t.Error("expected err to be empty")
+	}
+	y, e := yaml.Marshal(map[string][]pulse.BuildResult{fmt.Sprintf("%s (build 1)", mc.P[0]): []pulse.BuildResult{}})
+	if e != nil {
+		t.Error("expected err to be nil")
+	}
+	s, ok := out[0].(string)
+	if !ok {
+		t.Fatalf("expected out[0] to be of string type, was %T instead", out[0])
+	}
+	if string(y) != s {
+		t.Errorf("expected %s, got %s", y, out[0])
+	}
+}
+
+func TestStatusEmpty(t *testing.T) {
+	mc, mcli, _ := fixture()
+	mc.Err = make([]error, 1)
+	out, err := mcli.Status()
+	mc.Check(t)
+
+	if out == nil || len(out) != 1 {
+		t.Error("expected out to not be empty")
+	}
+	if err != nil && len(err) != 0 {
+		t.Error("expected err to be empty")
+	}
+	y, e := yaml.Marshal(struct{}{})
+	if e != nil {
+		t.Error("expected err to be nil")
+	}
+	s, ok := out[0].(string)
+	if !ok {
+		t.Fatalf("expected out[0] to be of string type, was %T instead", out[0])
+	}
+	if string(y) != s {
+		t.Errorf("expected %s, got %s", y, s)
+	}
 }
