@@ -335,7 +335,12 @@ func (cli *CLI) Stages(ctx *cli.Context) {
 		cli.Err(err)
 		return
 	}
-	s, err := cli.c.Stages(cli.p.String())
+	p := cli.p.String()
+	if p == "" || p == ".*" {
+		cli.Err("pulsecli: a --project name is missing")
+		return
+	}
+	s, err := cli.c.Stages(p)
 	if err != nil {
 		cli.Err(err)
 		return
