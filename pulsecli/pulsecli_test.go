@@ -291,7 +291,58 @@ func TestInitErr(t *testing.T) {
 }
 
 func TestStages(t *testing.T) {
-	t.Skip("TODO(rjeczalik)")
+	mc, mcli, f := fixture()
+	mc.Err = make([]error, 1)
+	f.Project = "Pulse CLI"
+	out, err := mcli.Stages()
+	mc.Check(t)
+	if out != nil && len(out) != 0 {
+		t.Error("expected out to be empty")
+	}
+	if err != nil && len(err) != 0 {
+		t.Error("expected err to be empty")
+	}
+}
+
+func TestStagesErr(t *testing.T) {
+	mc, mcli, f := fixture()
+	mc.Err = []error{errors.New("err")}
+	f.Project = "Pulse CLI"
+	out, err := mcli.Stages()
+	mc.Check(t)
+	if out != nil && len(out) != 0 {
+		t.Error("expected out to be empty")
+	}
+	if err == nil && len(err) != 1 {
+		t.Error("expected err to not be empty")
+	}
+	e, ok := err[0].(error)
+	if !ok {
+		t.Fatalf("expecred err[0] to be of error type, was %T instead", err[0])
+	}
+	if e == nil {
+		t.Error("expected e to be non-nil")
+	}
+}
+
+func TestStagesErr_MissingProjectName(t *testing.T) {
+	mc, mcli, _ := fixture()
+	out, err := mcli.Stages()
+	expected := "pulsecli: a --project name is missing"
+	mc.Check(t)
+	if out != nil && len(out) != 0 {
+		t.Error("expected out to be empty")
+	}
+	if err == nil && len(err) != 1 {
+		t.Error("expected err to not be empty")
+	}
+	s, ok := err[0].(string)
+	if !ok {
+		t.Fatalf("expecred err[0] to be of string type, was %T instead", err[0])
+	}
+	if s != expected {
+		t.Errorf("expected %s, got %s", expected, s)
+	}
 }
 
 func TestBuild(t *testing.T) {
@@ -299,7 +350,15 @@ func TestBuild(t *testing.T) {
 }
 
 func TestLogin(t *testing.T) {
-	t.Skip("TODO(rjeczalik)")
+	mc, mcli, _ := fixture()
+	out, err := mcli.Login()
+	mc.Check(t)
+	if out != nil && len(out) != 0 {
+		t.Error("expected out to be empty")
+	}
+	if err != nil && len(err) != 0 {
+		t.Error("expected err to be empty")
+	}
 }
 
 func TestTrigger(t *testing.T) {
@@ -503,7 +562,7 @@ func TestAgents(t *testing.T) {
 	mc, mcli, _ := fixture()
 	mc.Err = make([]error, 1)
 	mc.A = pulse.Agents{pulse.Agent{Name: "Agent1", Status: pulse.AgentIdle, Host: "Host1"}}
-	expected := fmt.Sprintf("%s\t %q", "Host1", "Agent1")
+	expected := fmt.Sprintf("%s\t%q", "Host1", "Agent1")
 	out, err := mcli.Agents()
 	mc.Check(t)
 	if out == nil && len(out) != 1 {
