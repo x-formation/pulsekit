@@ -504,7 +504,7 @@ func (cli *CLI) healthPulse(ctx *cli.Context) {
 		cli.Err(err)
 		return
 	}
-	if len(a.Filter(pulse.Sync)) >= len(a)/2 {
+	if len(a.Filter(pulse.Sync)) >= (len(a)+1)/2 {
 		cli.Err("pulsecli: >=50% of Pulse agents are hanging now!")
 		return
 	}

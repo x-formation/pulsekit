@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -357,7 +358,67 @@ func TestHealthProject(t *testing.T) {
 }
 
 func TestHealthPulse(t *testing.T) {
-	t.Skip("TODO(rjeczalik)")
+	mc, mcli, _ := fixture()
+	mc.Err = make([]error, 1)
+	mc.A = pulse.Agents{pulse.Agent{Name: "Agent1", Status: pulse.AgentIdle, Host: "Host1"}}
+	out, err := mcli.Health()
+	mc.Check(t)
+	if out != nil && len(out) != 0 {
+		t.Error("expected out to be empty")
+	}
+	if err != nil && len(err) != 0 {
+		t.Errorf("expected err to be empty, got %v", err)
+	}
+}
+
+func TestHealthPulseErr_Hanging(t *testing.T) {
+	mc, mcli, _ := fixture()
+	mc.Err = make([]error, 1)
+	mc.A = pulse.Agents{
+		pulse.Agent{Name: "Agent1", Status: pulse.AgentIdle, Host: "Host1"},
+		pulse.Agent{Name: "Agent2", Status: pulse.AgentSync, Host: "Host2"},
+	}
+	expectederr := "pulsecli: >=50% of Pulse agents are hanging now!"
+	out, err := mcli.Health()
+	mc.Check(t)
+	if out != nil && len(out) != 0 {
+		t.Error("expected out to be empty")
+	}
+	if err == nil && len(err) != 1 {
+		t.Error("expected err to not be empty")
+	}
+	e, ok := err[0].(string)
+	if !ok {
+		t.Fatal("expected err[0] to be of string type, was %T instead", err[0])
+	}
+	if e != expectederr {
+		t.Errorf("expected %s, got %s", expectederr, e)
+	}
+}
+
+func TestHealthPulseErr_Offline(t *testing.T) {
+	mc, mcli, _ := fixture()
+	mc.Err = make([]error, 1)
+	mc.A = pulse.Agents{
+		pulse.Agent{Name: "Agent1", Status: pulse.AgentOffline, Host: "Host1"},
+		pulse.Agent{Name: "Agent2", Status: pulse.AgentIdle, Host: "Host2"},
+	}
+	expectedAgent := mc.A[0]
+	out, err := mcli.Health()
+	mc.Check(t)
+	if out != nil && len(out) != 0 {
+		t.Error("expected out to be empty")
+	}
+	if err == nil && len(err) != 1 {
+		t.Error("expected err to not be empty")
+	}
+	a, ok := err[0].(pulse.Agent)
+	if !ok {
+		t.Fatal("expected err[0] to be of pulse.Agent type, was %T instead", err[0])
+	}
+	if !reflect.DeepEqual(a, expectedAgent) {
+		t.Errorf("expected %#v, got %#v", expectedAgent, a)
+	}
 }
 
 func TestProjects(t *testing.T) {
