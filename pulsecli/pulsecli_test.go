@@ -303,7 +303,50 @@ func TestLogin(t *testing.T) {
 }
 
 func TestTrigger(t *testing.T) {
-	t.Skip("TODO(rjeczalik)")
+	mc, mcli, _ := fixture()
+	mc.Err, mc.P, mc.T = make([]error, 3), []string{"Pulse CLI"}, []string{"message"}
+	out, err := mcli.Trigger()
+	expected := fmt.Sprintf("%s\t%q", mc.T[0], mc.P[0])
+	mc.Check(t)
+	if out == nil && len(out) != 1 {
+		t.Error("expected out to not be empty")
+	}
+	if err != nil && len(err) != 0 {
+		t.Error("expected err to be empty")
+	}
+	m, ok := out[0].(string)
+	if !ok {
+		t.Fatalf("expected out[0] to be of type string, was %T instead,", out[0])
+	}
+	if m != expected {
+		t.Errorf("expected %s, got %s", expected, m)
+	}
+}
+
+func TestTrigger_Empty(t *testing.T) {
+	mc, mcli, _ := fixture()
+	mc.Err = make([]error, 1)
+	out, err := mcli.Trigger()
+	mc.Check(t)
+	if out != nil && len(out) != 0 {
+		t.Error("expected out to be empty")
+	}
+	if err != nil && len(err) != 0 {
+		t.Error("expected err to be empty")
+	}
+}
+
+func TestTrigger_NotMatchingProj(t *testing.T) {
+	mc, mcli, f := fixture()
+	mc.Err, mc.P, mc.T, f.Project = make([]error, 1), []string{"Pulse CLI"}, []string{"message"}, "notmachtingregex"
+	out, err := mcli.Trigger()
+	mc.Check(t)
+	if out != nil && len(out) != 0 {
+		t.Error("expected out to be empty")
+	}
+	if err != nil && len(err) != 0 {
+		t.Error("expected err to be empty")
+	}
 }
 
 func TestHealthProject(t *testing.T) {
