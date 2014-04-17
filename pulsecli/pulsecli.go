@@ -105,6 +105,7 @@ type CLI struct {
 	v      pulsedev.Tool
 	a      *regexp.Regexp
 	p      *regexp.Regexp
+	s      *regexp.Regexp
 	patch  string
 	rev    string
 	n      int64
@@ -129,8 +130,9 @@ func New() *CLI {
 		cli.StringFlag{Name: "addr", Value: "http://pulse/xmlrpc", Usage: "Pulse Remote API endpoint"},
 		cli.StringFlag{Name: "user", Usage: "Pulse user name"},
 		cli.StringFlag{Name: "pass", Usage: "Pulse user password"},
-		cli.StringFlag{Name: "agent, a", Value: ".*", Usage: "Agent name patter"},
+		cli.StringFlag{Name: "agent, a", Value: ".*", Usage: "Agent name pattern"},
 		cli.StringFlag{Name: "project, p", Value: ".*", Usage: "Project name pattern"},
+		cli.StringFlag{Name: "stage, s", Value: ".*", Usage: "Stage name pattern"},
 		cli.StringFlag{Name: "timeout, t", Value: "15s", Usage: "Maximum wait time"},
 		cli.StringFlag{Name: "patch", Usage: "Patch file for a personal build"},
 		cli.StringFlag{Name: "revision, r", Value: "HEAD", Usage: "Revision to use for personal build"},
@@ -199,20 +201,21 @@ func (cli *CLI) init(ctx *cli.Context) error {
 			return err
 		}
 	}
-	a, p, r := ctx.GlobalString("agent"), ctx.GlobalString("project"), ctx.GlobalString("revision")
+	a, p, s := ctx.GlobalString("agent"), ctx.GlobalString("project"), ctx.GlobalString("stage")
 	if cli.a, err = regexp.Compile(a); err != nil {
 		return err
 	}
 	if cli.p, err = regexp.Compile(p); err != nil {
 		return err
 	}
-	n, t := ctx.GlobalInt("build"), ctx.GlobalString("timeout")
-	if cli.d, err = time.ParseDuration(t); err != nil {
+	if cli.s, err = regexp.Compile(s); err != nil {
 		return err
 	}
-	cli.n = int64(n)
+	if cli.d, err = time.ParseDuration(ctx.GlobalString("timeout")); err != nil {
+		return err
+	}
+	cli.n, cli.rev = int64(ctx.GlobalInt("build")), ctx.GlobalString("revision")
 	cli.c.SetTimeout(cli.d)
-	cli.rev = r
 	return nil
 }
 
@@ -224,10 +227,12 @@ func (cli *CLI) Personal(ctx *cli.Context) {
 		return
 	}
 	if p := ctx.GlobalString("patch"); p != "" {
-		if _, err := os.Open(p); err != nil {
+		f, err := os.Open(p)
+		if err != nil {
 			cli.Err(err)
 			return
 		}
+		f.Close()
 		cli.patch = p
 	}
 	url := cli.cred.URL
@@ -242,6 +247,26 @@ func (cli *CLI) Personal(ctx *cli.Context) {
 		Patch:    cli.patch,
 		Project:  cli.p.String(),
 		Revision: cli.rev,
+	}
+	if s := cli.s.String(); s != "" && s != ".*" {
+		s, err := cli.c.Stages(p.Project)
+		if err != nil {
+			cli.Err(err)
+			return
+		}
+		if len(s) != 0 {
+			p.Stages = make([]string, 0, len(s))
+			for _, s := range s {
+				if cli.s.MatchString(s) {
+					continue
+				}
+				p.Stages = append(p.Stages, s)
+			}
+			if len(p.Stages) == 0 {
+				cli.Err(fmt.Sprintf("pulsecli: no stages found that match %q", cli.s.String()))
+				return
+			}
+		}
 	}
 	id, err := cli.v.Personal(p)
 	if err != nil {
@@ -402,8 +427,7 @@ func (cli *CLI) Health(ctx *cli.Context) {
 		cli.Err(err)
 		return
 	}
-	p := cli.p.String()
-	if p != "" && p != ".*" {
+	if p := cli.p.String(); p != "" && p != ".*" {
 		cli.healthProject(ctx)
 	} else {
 		cli.healthPulse(ctx)

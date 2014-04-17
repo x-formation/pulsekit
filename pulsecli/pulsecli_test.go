@@ -90,6 +90,13 @@ func (mcli *MockCLI) Health() (out []interface{}, err []interface{}) {
 	return
 }
 
+func (mcli *MockCLI) Personal() (out []interface{}, err []interface{}) {
+	mcli.cli.Out = func(i ...interface{}) { out = i }
+	mcli.cli.Err = func(i ...interface{}) { err = i }
+	mcli.cli.Personal(mcli.ctx())
+	return
+}
+
 func (mcli *MockCLI) Projects() (out []interface{}, err []interface{}) {
 	mcli.cli.Out = func(i ...interface{}) { out = i }
 	mcli.cli.Err = func(i ...interface{}) { err = i }

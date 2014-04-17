@@ -176,3 +176,14 @@ type Message struct {
 	ArtifactName string   `xmlrpc:"artifact"`
 	Path         string   `xmlrpc:"path"`
 }
+
+// ProjectStage TODO(rjeczalik): document
+// 'projects/$PROJECT/stages'
+type ProjectStage struct {
+	Meta      string `xmlrpc:"meta.symbolicName"`
+	Name      string `xmlrpc:"name"`
+	Recipe    string `xmlrpc:"recipe"`
+	Agent     string `xmlrpc:"agent"`
+	Enabled   bool   `xmlrpc:"enabled"`
+	Terminate bool   `xmlrpc:"terminateBuildOnFailure"`
+}

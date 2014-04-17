@@ -31,17 +31,17 @@ VERSION:
 
 COMMANDS:
    login     Creates or updates session for current user
-   trigger	 Triggers a build
-   init		   Initialises a project
-   health	   Performs a health check
-   projects	 Lists all projct names
-   stages	   Lists all stage names
-   agents	   Lists all agent names
-   status	   Lists build's status
+   trigger   Triggers a build
+   init      Initialises a project
+   health    Performs a health check
+   projects  Lists all projct names
+   stages    Lists all stage names
+   agents    Lists all agent names
+   status    Lists build's status
    build     Gives build ID associated with given request ID
-   wait		   Waits for a build to complete
+   wait   Waits for a build to complete
    personal  Sends a personal build request
-   help, h	 Shows a list of commands or help for one command
+   help, h Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
    --addr 'http://pulse/xmlrpc'	Pulse Remote API endpoint
@@ -49,6 +49,7 @@ GLOBAL OPTIONS:
    --pass ''              Pulse user password
    --agent, -a '.*'       Agent name patter
    --project, -p '.*'     Project name pattern
+   --stage, -s '.*'       Stage name pattern
    --timeout, -t '15s'    Maximum wait time
    --patch ''             Patch file for a personal build
    --revision, -r 'HEAD'  Revision to use for personal build
@@ -156,8 +157,17 @@ by a tab. In order to obtain the build ID run `pulsecli build <request id>`.
 ###### Request a personal build for `review-1234.diff` and `Pulse CLI` project
 
 ```
+~ $ git diff HEAD~1 > review-1234.diff
 ~ $ pulsecli -p 'Pulse CLI' --patch review-1234.diff personal
 542
+```
+
+###### Request a personal build for stages `Build - MAC OS X 10.9` and `Build - Linux x86`
+
+```
+~ $ git diff HEAD~1 > review-4321.diff
+~ $ pulsecli -p 'LM-X - Tier 1' --patch review-4321.diff --stage 'Build - (MAC OS X|Linux x86$)' personal
+207
 ```
 
 ###### Obtain a build ID for the `2260289` request ID
@@ -174,7 +184,6 @@ by a tab. In order to obtain the build ID run `pulsecli build <request id>`.
 2238515	"LM-X - Tier 1"
 2238845	"LM-X - Tier 2"
 ```
-
 
 ###### Initialise all projects within `Pulse CLI` group
 

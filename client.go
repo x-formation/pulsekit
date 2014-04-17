@@ -16,12 +16,14 @@ type Client interface {
 	BuildResult(project string, id int64) ([]BuildResult, error)
 	Clear(project string) error
 	Close() error
+	ConfigStage(project, stage string) (ProjectStage, error)
 	Init(project string) (bool, error)
 	LatestBuildResult(project string) ([]BuildResult, error)
 	Messages(project string, id int64) (Messages, error)
 	Projects() ([]string, error)
 	Stages(project string) ([]string, error)
 	SetTimeout(d time.Duration)
+	SetConfigStage(project string, s ProjectStage) error
 	Trigger(project string) ([]string, error)
 }
 
@@ -82,6 +84,20 @@ func (c *client) Messages(project string, id int64) (Messages, error) {
 		return nil, err
 	}
 	return append(append(m, warn...), info...), nil
+}
+
+// ConfigStage TODO(rjeczalik): document
+func (c *client) ConfigStage(project, stage string) (s ProjectStage, err error) {
+	req := []interface{}{c.tok, fmt.Sprintf("projects/%s/stages/%s", project, stage)}
+	err = c.rpc.Call("RemoteApi.getConfig", req, &s)
+	return
+}
+
+// SetConfigStage TODO(rjeczalik): document
+func (c *client) SetConfigStage(project string, s ProjectStage) (err error) {
+	req := []interface{}{c.tok, fmt.Sprintf("projects/%s/stages/%s", project, s.Name), &s, false}
+	err = c.rpc.Call("RemoteApi.saveConfig", req, new(string))
+	return
 }
 
 // BuildID TODO(rjeczalik): document

@@ -49,6 +49,10 @@ func TestClose(t *testing.T) {
 	t.Skip("TODO(rjeczalik)")
 }
 
+func TestConfigStage(t *testing.T) {
+	t.Skip("TODO(rjeczalik)")
+}
+
 func TestInit(t *testing.T) {
 	t.Skip("TODO(rjeczalik)")
 }
@@ -71,6 +75,10 @@ func TestProjects(t *testing.T) {
 			t.Error("expected p to be non-empty")
 		}
 	}
+}
+
+func TestSetStage(t *testing.T) {
+	t.Skip("TODO(rjeczalik)")
 }
 
 func TestStages(t *testing.T) {

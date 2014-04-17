@@ -53,8 +53,8 @@ func (cmdExec) CombinedOutput(file string, args []string) (stdin io.Writer,
 	if err = cmd.Start(); err != nil {
 		return
 	}
-	done := make(chan error)
 	wait = func(d time.Duration) (err error) {
+		done := make(chan error)
 		go func() {
 			done <- cmd.Wait()
 			close(done)
@@ -108,7 +108,7 @@ func New(c pulse.Client, url, user, pass string) (Tool, error) {
 	return t, nil
 }
 
-func (t tool) valid() error {
+func (t *tool) valid() error {
 	for _, args := range [][]string{{"help"}, {"help", "personal"}} {
 		_, _, wait, err := t.exec.CombinedOutput(t.exe, args)
 		if err != nil {
@@ -121,22 +121,43 @@ func (t tool) valid() error {
 	return nil
 }
 
-func (t tool) Personal(p *Personal) (id int64, err error) {
-	args := []string{"personal", "-s", t.url, "-u", t.user, "-p", t.pass, "-r",
-		p.Project, "-t", "unified", "-f", p.Patch}
+func (t *tool) Personal(p *Personal) (id int64, err error) {
+	var (
+		line   []byte
+		stages []pulse.ProjectStage
+		delim  = byte('\n')
+		rev    = false
+	)
+	args := []string{
+		"personal",
+		"-s", t.url,
+		"-u", t.user,
+		"-p", t.pass,
+		"-r", p.Project,
+		"-t", "git",
+		"-f", p.Patch,
+	}
 	if p.Revision != "" {
 		args = append(args, "-e", p.Revision)
+	}
+	if p.Stages != nil {
+		stages = make([]pulse.ProjectStage, len(p.Stages))
+		for i, s := range p.Stages {
+			stages[i], err = t.c.ConfigStage(p.Project, s)
+			if err != nil {
+				return
+			}
+			stages[i].Enabled = false
+			if err = t.c.SetConfigStage(p.Project, stages[i]); err != nil {
+				return
+			}
+		}
 	}
 	in, out, wait, err := t.exec.CombinedOutput(t.exe, args)
 	if err != nil {
 		return
 	}
-	var (
-		line  []byte
-		rev   = false
-		delim = byte('\n')
-		r     = bufio.NewReader(out)
-	)
+	r := bufio.NewReader(out)
 INTERACTIVE:
 	for {
 		line, err = r.ReadBytes(delim)
@@ -177,6 +198,14 @@ INTERACTIVE:
 	}
 	if e := wait(t.d); (err == io.EOF || err == nil) && e != nil {
 		err = e
+	}
+	if stages != nil {
+		for i := range stages {
+			stages[i].Enabled = true
+			if e := t.c.SetConfigStage(p.Project, stages[i]); e != nil && err == nil {
+				err = e
+			}
+		}
 	}
 	return
 }

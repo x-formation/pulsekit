@@ -16,6 +16,7 @@ type Client struct {
 	I   bool
 	L   []pulse.BuildResult
 	M   pulse.Messages
+	PS  pulse.ProjectStage
 	P   []string
 	S   []string
 	T   []string
@@ -64,6 +65,10 @@ func (c *Client) Close() error {
 	return c.err()
 }
 
+func (c *Client) ConfigStage(project, stage string) (pulse.ProjectStage, error) {
+	return c.PS, c.err()
+}
+
 func (c *Client) Init(project string) (bool, error) {
 	return c.I, c.err()
 }
@@ -78,6 +83,10 @@ func (c *Client) Messages(project string, id int64) (pulse.Messages, error) {
 
 func (c *Client) Projects() ([]string, error) {
 	return c.P, c.err()
+}
+
+func (c *Client) SetConfigStage(project string, s pulse.ProjectStage) error {
+	return c.err()
 }
 
 func (c *Client) SetTimeout(d time.Duration) {
