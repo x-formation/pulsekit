@@ -48,7 +48,7 @@ GLOBAL OPTIONS:
    --user ''              Pulse user name
    --pass ''              Pulse user password
    --agent, -a '.*'       Agent name patter
-   --project, -p '.*'     Project name pattern
+   --project, -p '.*'     Project name pattern (or "personal")
    --stage, -s '.*'       Stage name pattern
    --timeout, -t '15s'    Maximum wait time
    --patch ''             Patch file for a personal build
@@ -125,7 +125,7 @@ LM-X - Tier 1 (build 1356):
 by a tab. In order to obtain the build ID run `pulsecli build <request id>`.
 
 ```
-~ $ pulsecli --project '^[^C]*$' trigger
+~ $ pulsecli --project '^((\S)[^C]+|Pulse CLI.*)$' trigger
 2242787	"License Statistics - Development"
 2243158	"LM-X - Tier 1"
 2243466	"LM-X - Tier 2"

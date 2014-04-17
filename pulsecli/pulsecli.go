@@ -131,7 +131,7 @@ func New() *CLI {
 		cli.StringFlag{Name: "user", Usage: "Pulse user name"},
 		cli.StringFlag{Name: "pass", Usage: "Pulse user password"},
 		cli.StringFlag{Name: "agent, a", Value: ".*", Usage: "Agent name pattern"},
-		cli.StringFlag{Name: "project, p", Value: ".*", Usage: "Project name pattern"},
+		cli.StringFlag{Name: "project, p", Value: ".*", Usage: `Project name pattern (or "personal")`},
 		cli.StringFlag{Name: "stage, s", Value: ".*", Usage: "Stage name pattern"},
 		cli.StringFlag{Name: "timeout, t", Value: "15s", Usage: "Maximum wait time"},
 		cli.StringFlag{Name: "patch", Usage: "Patch file for a personal build"},
@@ -227,12 +227,10 @@ func (cli *CLI) Personal(ctx *cli.Context) {
 		return
 	}
 	if p := ctx.GlobalString("patch"); p != "" {
-		f, err := os.Open(p)
-		if err != nil {
+		if _, err = os.Stat(p); err != nil {
 			cli.Err(err)
 			return
 		}
-		f.Close()
 		cli.patch = p
 	}
 	url := cli.cred.URL
@@ -541,12 +539,15 @@ func (cli *CLI) Agents(ctx *cli.Context) {
 
 // Status TODO(rjeczalik): document
 func (cli *CLI) Status(ctx *cli.Context) {
-	if err := cli.init(ctx); err != nil {
+	err := cli.init(ctx)
+	if err != nil {
 		cli.Err(err)
 		return
 	}
-	p, err := cli.c.Projects()
-	if err != nil {
+	var p []string
+	if cli.p.String() == pulse.ProjectPersonal {
+		p = append(p, pulse.ProjectPersonal)
+	} else if p, err = cli.c.Projects(); err != nil {
 		cli.Err(err)
 		return
 	}

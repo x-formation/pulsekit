@@ -177,6 +177,8 @@ type Message struct {
 	Path         string   `xmlrpc:"path"`
 }
 
+const ProjectPersonal = "personal"
+
 // ProjectStage TODO(rjeczalik): document
 // 'projects/$PROJECT/stages'
 type ProjectStage struct {

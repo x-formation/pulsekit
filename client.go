@@ -118,16 +118,19 @@ func (c *client) BuildID(reqid string) (int64, error) {
 }
 
 // BuildResult TODO(rjeczalik): document
-func (c *client) BuildResult(project string, id int64) ([]BuildResult, error) {
-	var build []BuildResult
-	err := c.rpc.Call("RemoteApi.getBuild", []interface{}{c.tok, project, int(id)}, &build)
+func (c *client) BuildResult(project string, id int64) (res []BuildResult, err error) {
+	if project == ProjectPersonal {
+		err = c.rpc.Call("RemoteApi.getPersonalBuild", []interface{}{c.tok, int(id)}, &res)
+	} else {
+		err = c.rpc.Call("RemoteApi.getBuild", []interface{}{c.tok, project, int(id)}, &res)
+	}
 	if err != nil {
 		return nil, err
 	}
-	if build == nil || len(build) == 0 {
+	if res == nil || len(res) == 0 {
 		return nil, &InvalidBuildError{ID: id, Status: BuildUnknown}
 	}
-	return build, nil
+	return res, nil
 }
 
 // Stages TODO(rjeczalik): document
@@ -153,13 +156,19 @@ func (c *client) Stages(project string) ([]string, error) {
 }
 
 // LatestBuildResult TODO(rjeczalik): document
-func (c *client) LatestBuildResult(project string) ([]BuildResult, error) {
-	var build []BuildResult
-	err := c.rpc.Call("RemoteApi.getLatestBuildForProject", []interface{}{c.tok, project, true}, &build)
+func (c *client) LatestBuildResult(project string) (res []BuildResult, err error) {
+	if project == ProjectPersonal {
+		err = c.rpc.Call("RemoteApi.getLatestPersonalBuildForProject", []interface{}{c.tok, true}, &res)
+	} else {
+		err = c.rpc.Call("RemoteApi.getLatestBuildForProject", []interface{}{c.tok, project, true}, &res)
+	}
 	if err != nil {
 		return nil, err
 	}
-	return build, nil
+	if res == nil || len(res) == 0 {
+		return nil, &InvalidBuildError{Status: BuildUnknown}
+	}
+	return res, nil
 }
 
 // Close TODO(rjeczalik): document
