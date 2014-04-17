@@ -230,7 +230,62 @@ func TestWait_Timeout(t *testing.T) {
 }
 
 func TestInit(t *testing.T) {
-	t.Skip("TODO(rjeczalik)")
+	mc, mcli, _ := fixture()
+	mc.Err = make([]error, 1)
+	out, err := mcli.Init()
+	mc.Check(t)
+	if out != nil && len(out) != 0 {
+		t.Error("expected out to be empty")
+	}
+	if err != nil && len(err) != 0 {
+		t.Error("expected err to be empty")
+	}
+}
+
+func TestInitErr_ProjectRegex(t *testing.T) {
+	mc, mcli, f := fixture()
+	f.Project = "("
+	out, err := mcli.Init()
+	mc.Check(t)
+	if out != nil && len(out) != 0 {
+		t.Error("expected out to be empty")
+	}
+	if err == nil || len(err) != 1 {
+		t.Fatalf("expected err!=nil, len(err)=1; was err=%v, len(err)=%d",
+			err, len(err))
+	}
+	e, ok := err[0].(error)
+	if !ok {
+		t.Fatalf("expecred err[0] to be of error type, was %T instead", err[0])
+	}
+	if e == nil {
+		t.Error("expected e to be non-nil")
+	}
+}
+
+func TestInitErr(t *testing.T) {
+	mc, mcli, f := fixture()
+	mc.Err, mc.P = []error{nil, errors.New("err")}, []string{"Pulse CLI"}
+	f.Project = "Pulse CLI"
+	out, err := mcli.Init()
+	mc.Check(t)
+	if out != nil && len(out) != 0 {
+		t.Error("expected out to be empty")
+	}
+	if err == nil || len(err) != 1 {
+		t.Fatalf("expected err!=nil, len(err)=1; was err=%v, len(err)=%d",
+			err, len(err))
+	}
+	e, ok := err[0].(error)
+	if !ok {
+		t.Fatalf("expecred err[0] to be of error type, was %T instead", err[0])
+	}
+	if e == nil {
+		t.Error("expected e to be non-nil")
+	}
+	if e.Error() != "err" {
+		t.Error("e to be 'err'")
+	}
 }
 
 func TestStages(t *testing.T) {
