@@ -12,6 +12,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/x-formation/int-tools/pulseutil"
 	"github.com/x-formation/int-tools/pulseutil/prtg"
 	"github.com/x-formation/int-tools/pulseutil/pulsedev"
 	"github.com/x-formation/int-tools/pulseutil/util"

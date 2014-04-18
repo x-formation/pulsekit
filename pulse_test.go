@@ -30,14 +30,14 @@ func TestAgentsFilter(t *testing.T) {
 		func(a *Agent) bool { return strings.HasPrefix(a.Host, "pulse-") },
 	}
 	expected := []Agents{
-		{},
+		nil,
 		{Agent{Status: AgentOffline}},
 		{Agent{Status: AgentOffline}, Agent{Status: AgentOffline}, Agent{Status: AgentOffline}},
-		{},
+		nil,
 		{Agent{Status: AgentSync}},
 		{Agent{Status: AgentSync}, Agent{Status: AgentSync}, Agent{Status: AgentSync}},
 		{Agent{Host: "win-1"}, Agent{Host: "win-2"}, Agent{Host: "win-3"}},
-		{},
+		nil,
 		{Agent{Host: "pulse-x64-1"}, Agent{Host: "pulse-x86-2"}},
 	}
 	for i := range agents {
@@ -69,22 +69,22 @@ func TestMessagesFilter(t *testing.T) {
 	expected := []Messages{
 		{Message{Severity: SeverityInfo}, Message{Severity: SeverityInfo}, Message{Severity: SeverityInfo}},
 		{Message{Severity: SeverityInfo}},
-		{},
+		nil,
 		{Message{Severity: SeverityWarning}, Message{Severity: SeverityWarning}, Message{Severity: SeverityWarning}},
 		{Message{Severity: SeverityWarning}},
-		{},
+		nil,
 		{Message{Severity: SeverityError}, Message{Severity: SeverityError}, Message{Severity: SeverityError}},
 		{Message{Severity: SeverityError}},
-		{},
+		nil,
 	}
 	expectedout := []Messages{
-		{},
+		nil,
 		{Message{Severity: SeverityWarning}, Message{Severity: SeverityError}},
 		{Message{Severity: SeverityWarning}, Message{Severity: SeverityWarning}, Message{Severity: SeverityError}},
-		{},
+		nil,
 		{Message{Severity: SeverityError}, Message{Severity: SeverityInfo}},
 		{Message{Severity: SeverityError}, Message{Severity: SeverityError}, Message{Severity: SeverityInfo}},
-		{},
+		nil,
 		{Message{Severity: SeverityInfo}, Message{Severity: SeverityWarning}},
 		{Message{Severity: SeverityInfo}, Message{Severity: SeverityInfo}, Message{Severity: SeverityWarning}},
 	}

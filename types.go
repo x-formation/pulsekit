@@ -189,3 +189,45 @@ type ProjectStage struct {
 	Enabled   bool   `xmlrpc:"enabled"`
 	Terminate bool   `xmlrpc:"terminateBuildOnFailure"`
 }
+
+// ProjectCleanup TODO(rjeczalik): document
+// 'projects/$PROJECT/cleanup'
+type ProjectCleanup struct {
+	// TODO(rjeczalik): The response for this config path looks like:
+	//
+	//  <struct>
+	//    <member>
+	//      <name>60 days</name>
+	//      <value> ... </value>
+	//    </member>
+	//  </struct>
+	//
+	// Which makes it impossible to map in any useful way at the moment.
+}
+
+// BuildType TODO(rjeczalik): document
+type BuildType string
+
+const (
+	BuildClean       BuildType = "CLEAN_BUILD"
+	BuildIncremental BuildType = "INCREMENTAL_BUILD"
+)
+
+// CheckoutType TODO(rjeczalik): document
+type CheckoutType string
+
+const (
+	CheckoutClean       CheckoutType = "CLEAN_CHECKOUT"
+	CheckoutIncremental CheckoutType = "INCREMENTAL_CHECKOUT"
+	CheckoutNone        CheckoutType = "NO_CHECKOUT"
+)
+
+// ProjectBootstrap TODO(rjeczalik): document
+// 'projects/$PROJECT/bootstrap'
+type ProjectBootstrap struct {
+	Meta          string       `xmlrpc:"meta.symbolicName"`
+	Build         BuildType    `xmlrpc:"buildType"`
+	Checkout      CheckoutType `xmlrpc:"checkoutType"`
+	TempDir       string       `xmlrpc:"tempDirPattern"`
+	PersistentDir string       `xmlrpc:"persistentDirPattern"`
+}
