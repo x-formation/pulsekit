@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/x-formation/int-tools/pulseutil"
+	"github.com/x-formation/pulsekit"
 )
 
 type Client struct {

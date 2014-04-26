@@ -1,4 +1,4 @@
-package pulsecli
+package cli
 
 import (
 	"errors"
@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/x-formation/int-tools/pulseutil"
-	"github.com/x-formation/int-tools/pulseutil/mock"
+	"github.com/x-formation/pulsekit"
+	"github.com/x-formation/pulsekit/mock"
 
 	"github.com/codegangsta/cli"
 	"gopkg.in/v1/yaml"

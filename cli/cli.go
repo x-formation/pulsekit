@@ -1,4 +1,4 @@
-package pulsecli
+package cli
 
 import (
 	"bytes"
@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/x-formation/int-tools/pulseutil"
-	"github.com/x-formation/int-tools/pulseutil/prtg"
-	"github.com/x-formation/int-tools/pulseutil/pulsedev"
-	"github.com/x-formation/int-tools/pulseutil/util"
+	"github.com/x-formation/pulsekit"
+	"github.com/x-formation/pulsekit/dev"
+	"github.com/x-formation/pulsekit/prtg"
+	"github.com/x-formation/pulsekit/util"
 
 	"github.com/codegangsta/cli"
 	"gopkg.in/v1/yaml"
@@ -98,7 +98,7 @@ type CLI struct {
 	// Client is used to communicate with a Pulse server.
 	Client func(url, user, pass string) (pulse.Client, error)
 	// Dev TODO(rjeczalik): document
-	Dev func(c pulse.Client, url, user, pass string) (pulsedev.Tool, error)
+	Dev func(c pulse.Client, url, user, pass string) (dev.Tool, error)
 	// Out terminates the application, writing to os.Stdout and calling os.Exit(0)
 	Out func(...interface{})
 	// Err terminates the application, writing to os.Stdout and calling os.Exit(1)
@@ -108,7 +108,7 @@ type CLI struct {
 	app   *cli.App
 	cred  *Creds
 	c     pulse.Client
-	v     pulsedev.Tool
+	v     dev.Tool
 	a     *regexp.Regexp
 	p     *regexp.Regexp
 	s     *regexp.Regexp
@@ -123,7 +123,7 @@ type CLI struct {
 func New() *CLI {
 	cl := &CLI{
 		Client: pulse.NewClient,
-		Dev:    pulsedev.New,
+		Dev:    dev.New,
 		Store:  fileStore{},
 		Err:    defaultErr,
 		Out:    defaultOut,
@@ -247,7 +247,7 @@ func (cli *CLI) Personal(ctx *cli.Context) {
 		cli.Err(err)
 		return
 	}
-	p := &pulsedev.Personal{
+	p := &dev.Personal{
 		Patch:    cli.patch,
 		Project:  cli.p.String(),
 		Revision: cli.rev,

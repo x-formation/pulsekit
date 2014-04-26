@@ -1,9 +1,9 @@
-package pulsedev
+package dev
 
 import (
 	"testing"
 
-	"github.com/x-formation/int-tools/pulseutil/mock"
+	"github.com/x-formation/pulsekit/mock"
 )
 
 func fixture(t *testing.T) (*mock.Client, Tool) {

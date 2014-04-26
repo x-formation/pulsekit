@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/x-formation/int-tools/pulseutil"
-	"github.com/x-formation/int-tools/pulseutil/mock"
+	"github.com/x-formation/pulsekit"
+	"github.com/x-formation/pulsekit/mock"
 )
 
 func TestPending(t *testing.T) {

@@ -3,9 +3,9 @@ package main
 import (
 	"os"
 
-	"github.com/x-formation/int-tools/pulseutil/pulsecli"
+	"github.com/x-formation/pulsekit/cli"
 )
 
 func main() {
-	pulsecli.New().Run(os.Args)
+	cli.New().Run(os.Args)
 }

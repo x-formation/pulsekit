@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/x-formation/int-tools/pulseutil"
-	"github.com/x-formation/int-tools/pulseutil/util"
+	"github.com/x-formation/pulsekit"
+	"github.com/x-formation/pulsekit/util"
 )
 
 const (

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/x-formation/int-tools/pulseutil"
+	"github.com/x-formation/pulsekit"
 )
 
 func fixture() (*bytes.Buffer, *int) {

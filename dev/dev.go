@@ -1,4 +1,4 @@
-package pulsedev
+package dev
 
 import (
 	"bufio"
@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/x-formation/int-tools/pulseutil"
+	"github.com/x-formation/pulsekit"
 )
 
 // Personal TODO(rjeczalik): document

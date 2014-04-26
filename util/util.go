@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/x-formation/int-tools/pulseutil"
+	"github.com/x-formation/pulsekit"
 )
 
 // Pending TODO(rjeczalik): document
