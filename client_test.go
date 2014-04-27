@@ -1,18 +1,24 @@
 package pulse
 
-import "testing"
+import (
+	"testing"
 
-func fixture(t *testing.T) Client {
-	c, err := NewClient("http://pulse/xmlrpc", "pulse_test", "pulse_test")
+	"github.com/rjeczalik/fakerpc"
+)
+
+func fixture(t *testing.T) (Client, func()) {
+	addr, teardown := fakerpc.Fixture(t)
+	c, err := NewClient(addr+"/xmlrpc", "pulse_test", "pulse_test")
 	if err != nil {
 		t.Fatalf("expected err to be nil, was %q instead", err)
 	}
 	t.Parallel()
-	return c
+	return c, func() { c.Close(); teardown() }
 }
 
 func TestAgents(t *testing.T) {
-	c := fixture(t)
+	c, teardown := fixture(t)
+	defer teardown()
 	a, err := c.Agents()
 	if err != nil {
 		t.Fatalf("expected err to be nil, was %q instead", err)
@@ -62,7 +68,8 @@ func TestLatestBuildResult(t *testing.T) {
 }
 
 func TestProjects(t *testing.T) {
-	c := fixture(t)
+	c, teardown := fixture(t)
+	defer teardown()
 	p, err := c.Projects()
 	if err != nil {
 		t.Fatalf("expected err to be nil, was %v instead", err)

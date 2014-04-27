@@ -6,6 +6,8 @@ import (
 
 	"github.com/x-formation/pulsekit"
 	"github.com/x-formation/pulsekit/util"
+
+	"github.com/rjeczalik/fakerpc"
 )
 
 const (
@@ -13,17 +15,19 @@ const (
 	BrokenProject = "Pulse CLI - Failure"
 )
 
-func fixture(t *testing.T) pulse.Client {
-	c, err := pulse.NewClient("http://pulse/xmlrpc", "pulse_test", "pulse_test")
+func fixture(t *testing.T) (pulse.Client, func()) {
+	addr, teardown := fakerpc.Fixture(t)
+	c, err := pulse.NewClient(addr+"/xmlrpc", "pulse_test", "pulse_test")
 	if err != nil {
 		t.Fatalf("expected err to be nil, was %v instead", err)
 	}
 	t.Parallel()
-	return c
+	return c, func() { c.Close(); teardown() }
 }
 
 func accept(t *testing.T, p string, ok bool) {
-	c := fixture(t)
+	c, teardown := fixture(t)
+	defer teardown()
 	reqid, err := c.Trigger(p)
 	if err != nil {
 		t.Fatalf("error triggering build %q: %v", p, err)
