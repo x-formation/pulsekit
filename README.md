@@ -5,7 +5,7 @@ Repository for tools / libraries built around Zutubi Pulse server for automation
 
 ## cmd/pulsecli
 
-Command-line tool for communicating with Zutubi Pulse server through its Remote API.
+Command-line tool for communicating with Zutubi Pulse server via its Remote API.
 
 #### Installation
 
@@ -16,7 +16,7 @@ Just go get it:
 ~ $ GOBIN=~/bin go install github.com/x-formation/pulsekit/cmd/pulsecli
 ```
 
-Ensure you have `$GOPATH` set and `$GOBIN` (or `$GOPATH`/bin) is in your `$PATH`. Taking the oportunity you read this, I strongly encourage you to use [gvm](https://github.com/moovweb/gvm).
+Ensure you have `$GOPATH` set and `$GOBIN` (or `$GOPATH`/bin) is in your `$PATH`.
 
 #### Usage
 

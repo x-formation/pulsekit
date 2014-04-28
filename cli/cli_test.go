@@ -492,7 +492,7 @@ func TestHealthPulseErr_Hanging(t *testing.T) {
 	}
 	e, ok := err[0].(string)
 	if !ok {
-		t.Fatal("expected err[0] to be of string type, was %T instead", err[0])
+		t.Fatalf("expected err[0] to be of string type, was %T instead", err[0])
 	}
 	if e != expectederr {
 		t.Errorf("expected %s, got %s", expectederr, e)
@@ -517,7 +517,7 @@ func TestHealthPulseErr_Offline(t *testing.T) {
 	}
 	a, ok := err[0].(pulse.Agent)
 	if !ok {
-		t.Fatal("expected err[0] to be of pulse.Agent type, was %T instead", err[0])
+		t.Fatalf("expected err[0] to be of pulse.Agent type, was %T instead", err[0])
 	}
 	if !reflect.DeepEqual(a, expectedAgent) {
 		t.Errorf("expected %#v, got %#v", expectedAgent, a)
@@ -606,7 +606,7 @@ func TestStatus(t *testing.T) {
 	if err != nil && len(err) != 0 {
 		t.Error("expected err to be empty")
 	}
-	y, e := yaml.Marshal(map[string][]pulse.BuildResult{fmt.Sprintf("%s (build 1)", mc.P[0]): []pulse.BuildResult{}})
+	y, e := yaml.Marshal(map[string][]pulse.BuildResult{fmt.Sprintf("%s (build 1)", mc.P[0]): {}})
 	if e != nil {
 		t.Error("expected err to be nil")
 	}
