@@ -124,9 +124,9 @@ func (t *tool) valid() error {
 func (t *tool) Personal(p *Personal) (id int64, err error) {
 	var (
 		line   []byte
+		res    []byte
 		stages []pulse.ProjectStage
 		delim  = byte('\n')
-		rev    = false
 	)
 	args := []string{
 		"personal",
@@ -170,11 +170,14 @@ INTERACTIVE:
 		s := string(line)
 		switch delim {
 		case '\n':
-			if strings.Contains(s, "Continue anyway?") || strings.Contains(s, "Synchronise now?") {
-				delim = '>'
+			if strings.Contains(s, "Continue anyway?") {
+				delim, res = '>', []byte("Yes\n")
+			}
+			if strings.Contains(s, "Synchronise now?") {
+				delim, res = '>', []byte("No\n")
 			}
 			if strings.Contains(s, "Choose revision to build against") {
-				delim, rev = '>', true
+				delim, res = '>', []byte("1!\n")
 			}
 			i := strings.Index(s, "Patch accepted: personal build")
 			if i != -1 {
@@ -186,14 +189,10 @@ INTERACTIVE:
 				break INTERACTIVE
 			}
 		case '>':
-			res := []byte("Yes\n")
-			if rev {
-				res = []byte("1!\n")
-			}
 			if _, err = in.Write(res); err != nil && err != io.EOF {
 				break INTERACTIVE
 			}
-			delim, rev = '\n', false
+			delim = '\n'
 		}
 	}
 	if e := wait(t.d); (err == io.EOF || err == nil) && e != nil {
