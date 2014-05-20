@@ -86,7 +86,6 @@ func TestProjects(t *testing.T) {
 
 func TestSetStage(t *testing.T) {
 	t.Skip("TODO(rjeczalik)")
-}
 
 func TestStages(t *testing.T) {
 	t.Skip("TODO(rjeczalik)")
@@ -94,4 +93,8 @@ func TestStages(t *testing.T) {
 
 func TestTrigger(t *testing.T) {
 	t.Skip("TODO(rjeczalik)")
+}
+
+func TestArtifact(t *testing.T) {
+	t.Skip("TODO(ppieprzyk)")
 }

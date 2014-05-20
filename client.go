@@ -50,6 +50,8 @@ type Client interface {
 	// Trigger triggers a build for a given project returning request IDs
 	// of builds caused by that trigger.
 	Trigger(project string) ([]string, error)
+	// Artifact downloads artifacts for given project and build number
+	Artifact(id int64, project, dir, url string) error
 }
 
 var ErrTimeout = errors.New("pulse: request has timed out")
@@ -227,4 +229,38 @@ func (c *client) Agents() (Agents, error) {
 		a[i].Name = names[i]
 	}
 	return a, nil
+}
+
+// Artifact(project string, id int64, dir string, baseUrl string)
+func (c *client) Artifact(id int64, project, dir, url string) (err error) {
+	var art []BuildArtifact
+	if project == ProjectPersonal {
+		err = c.rpc.Call("RemoteApi.getArtifactsInPersonalBuild", []interface{}{c.tok, int(id)}, &art)
+	} else {
+		err = c.rpc.Call("RemoteApi.getArtifactsInBuild", []interface{}{c.tok, project, int(id)}, &art)
+	}
+	if err != nil {
+		return err
+	}
+
+	for i := range art {
+		if project == ProjectPersonal {
+			err = c.rpc.Call("RemoteApi.getArtifactFileListingPersonal", []interface{}{c.tok, int(id), art[i].Stage, art[i].Command, art[i].Name, ""},
+				&art[i].Files)
+		} else {
+			err = c.rpc.Call("RemoteApi.getArtifactFileListing", []interface{}{c.tok, project, int(id), art[i].Stage, art[i].Command, art[i].Name, ""},
+				&art[i].Files)
+		}
+		if err != nil {
+			return err
+		}
+	}
+
+	af := NewArtifactFetcher(url, c.tok, dir)
+	for i := range art {
+		if err = af.Fetch(&art[i], project); err != nil {
+			return err
+		}
+	}
+	return nil
 }
