@@ -31,18 +31,19 @@ VERSION:
    0.1.0
 
 COMMANDS:
-   login     Creates or updates session for current user
-   trigger   Triggers a build
-   init      Initialises a project
-   health    Performs a health check
-   projects  Lists all projct names
-   stages    Lists all stage names
-   agents    Lists all agent names
-   status    Lists build's status
-   build     Gives build ID associated with given request ID
-   wait   Waits for a build to complete
-   personal  Sends a personal build request
-   help, h Shows a list of commands or help for one command
+   login      Creates or updates session for current user
+   trigger    Triggers a build
+   init       Initialises a project
+   health     Performs a health check
+   projects   Lists all projct names
+   stages     Lists all stage names
+   agents     Lists all agent names
+   status     Lists build's status
+   build      Gives build ID associated with given request ID
+   wait   	  Waits for a build to complete
+   personal   Sends a personal build request
+   artifact   Gets all artifacts for given project and build
+   help, h 	  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
    --addr 'http://pulse/xmlrpc'	Pulse Remote API endpoint
@@ -57,6 +58,7 @@ GLOBAL OPTIONS:
    --build, -b '0'        Build number
    --prtg                 PRTG-friendly output
    --version, -v          print the version
+   --output, -o 		  artifacts download destination
    --help, -h             show help
 ```
 
@@ -292,3 +294,41 @@ LM-X - Release Build - Tier 2 (build 537):
   revision: 22fc614bd290041778ad1a69fc66c97841c77177
 ...
 ```
+
+###### Download all artifacts of `License Activation Center - API` project for given build
+
+The `--output` or `-o` flag expects destination to download artifacts into.
+If it's ommited, current working dir is taken
+```
+~ $ pulsecli -p '^License Activation Center - API$' -b 191 -o arts artifact
+```
+After downloading artifacts we get calatog structure like in pulse
+```
+~ tree arts
+arts
+└── License Activation Center - API
+    ├── Build - Linux x64 - API
+    │   ├── bootstrap
+    │   │   └── bootstrap output
+    │   │       └── files.txt
+    │   ├── Build
+    │   │   ├── command output
+    │   │   │   └── output.txt
+    │   │   └── environment
+    │   │       └── env.txt
+    │   ├── Build installer
+    │   │   ├── command output
+    │   │   │   └── output.txt
+    │   │   ├── environment
+    │   │   │   └── env.txt
+    │   │   └── Installer files
+    │   │       └── linux_x64
+    │   │           └── lacapi_linux_x64_rev6.zip
+    │   └── Run test
+    │       ├── command output
+    │       │   └── output.txt
+...
+...
+```
+You can pass some complex regexp as `-p` parameter. It will cause to download artifacts for all
+projects which names matches the regexp into separate catalogs.

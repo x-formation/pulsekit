@@ -112,6 +112,7 @@ type CLI struct {
 	a     *regexp.Regexp
 	p     *regexp.Regexp
 	s     *regexp.Regexp
+	o     *regexp.Regexp
 	patch string
 	rev   string
 	n     int64
@@ -144,6 +145,7 @@ func New() *CLI {
 		cli.StringFlag{Name: "revision, r", Value: "HEAD", Usage: "Revision to use for personal build"},
 		cli.IntFlag{Name: "build, b", Usage: "Build number"},
 		cli.BoolFlag{Name: "prtg", Usage: "PRTG-friendly output"},
+		cli.StringFlag{Name: "output, o", Value: ".", Usage: "Output for fetched artifacts"},
 	}
 	cl.app.Commands = []cli.Command{{
 		Name:   "login",
@@ -189,6 +191,10 @@ func New() *CLI {
 		Name:   "personal",
 		Usage:  "Sends a personal build request",
 		Action: cl.Personal,
+	}, {
+		Name:   "artifact",
+		Usage:  "Downloads all the artifact files",
+		Action: cl.Artifact,
 	}}
 	return cl
 }
@@ -207,7 +213,7 @@ func (cli *CLI) init(ctx *cli.Context) error {
 			return err
 		}
 	}
-	a, p, s := ctx.GlobalString("agent"), ctx.GlobalString("project"), ctx.GlobalString("stage")
+	a, p, s, o := ctx.GlobalString("agent"), ctx.GlobalString("project"), ctx.GlobalString("stage"), ctx.GlobalString("output")
 	if cli.a, err = regexp.Compile(a); err != nil {
 		return err
 	}
@@ -215,6 +221,9 @@ func (cli *CLI) init(ctx *cli.Context) error {
 		return err
 	}
 	if cli.s, err = regexp.Compile(s); err != nil {
+		return err
+	}
+	if cli.o, err = regexp.Compile(o); err != nil {
 		return err
 	}
 	if cli.d, err = time.ParseDuration(ctx.GlobalString("timeout")); err != nil {
@@ -607,4 +616,38 @@ func (cli *CLI) Status(ctx *cli.Context) {
 // Run takes command line arguments and starts the application.
 func (cli *CLI) Run(args []string) {
 	cli.app.Run(args)
+}
+
+// Artifact is a a command line interface to Artifact method of a pulse.Client.
+// It downloads all artifacts captured from given project and build number
+func (cli *CLI) Artifact(ctx *cli.Context) {
+	var projects []string
+	err := cli.init(ctx)
+	if err != nil {
+		cli.Err(err)
+		return
+	}
+	if cli.p.String() == pulse.ProjectPersonal {
+		projects = append(projects, pulse.ProjectPersonal)
+	} else if projects, err = cli.c.Projects(); err != nil {
+		cli.Err(err)
+		return
+	}
+
+	var build int64
+	dir := cli.o.String()
+	url := strings.Trim(cli.cred.URL, "/xmlrpc")
+	for _, p := range projects {
+		if !cli.p.MatchString(p) {
+			continue
+		}
+		if build, err = util.NormalizeBuildOrRequestID(cli.c, p, cli.n); err != nil {
+			cli.Err(err)
+			return
+		}
+		if err = cli.c.Artifact(build, p, dir, url); err != nil {
+			cli.Err(err)
+			return
+		}
+	}
 }

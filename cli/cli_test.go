@@ -643,3 +643,7 @@ func TestStatusEmpty(t *testing.T) {
 		t.Errorf("expected %s, got %s", y, s)
 	}
 }
+
+func TestArtifact(t *testing.T) {
+	t.Skip("TODO(ppieprzyk)")
+}

@@ -231,3 +231,15 @@ type ProjectBootstrap struct {
 	TempDir       string       `xmlrpc:"tempDirPattern"`
 	PersistentDir string       `xmlrpc:"persistentDirPattern"`
 }
+
+// BuildArtifact holds infromation about project's artifacts
+type BuildArtifact struct {
+	Stage     string `xmlrpc:"stage"`
+	Command   string `xmlrpc:"command"`
+	Name      string `xmlrpc:"name"`
+	DataPath  string `xmlrpc:"dataPath"`
+	Explicit  bool   `xmlrpc:"explicit"`
+	Featured  bool   `xmlrpc:"featured"`
+	Permalink string `xmlrpc:"permalink"`
+	Files     []string
+}
