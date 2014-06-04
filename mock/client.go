@@ -101,6 +101,10 @@ func (c *Client) Trigger(project string) ([]string, error) {
 	return c.T, c.err()
 }
 
+func (c *Client) Artifact(id int64, project, dir, url string) error {
+	return c.err()
+}
+
 func NewClient() *Client {
 	return &Client{}
 }
