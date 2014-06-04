@@ -1,9 +1,9 @@
-pulsekit
+pulsekit [![GoDoc](https://godoc.org/github.com/x-formation/pulsekit?status.png)](https://godoc.org/github.com/x-formation/pulsekit) [![Build Status](https://travis-ci.org/x-formation/pulsekit.png?branch=master)](https://travis-ci.org/x-formation/pulsekit)
 ========
 
 Repository for tools / libraries built around Zutubi Pulse server for automation purposes. This most notable tools in this repository are:
 
-## cmd/pulsecli
+## cmd/pulsecli [![GoDoc](https://godoc.org/github.com/x-formation/pulsekit/cmd/pulsecli?status.png)](https://godoc.org/github.com/x-formation/pulsekit/cmd/pulsecli)
 
 Command-line tool for communicating with Zutubi Pulse server via its Remote API.
 
@@ -40,10 +40,10 @@ COMMANDS:
    agents     Lists all agent names
    status     Lists build's status
    build      Gives build ID associated with given request ID
-   wait   	  Waits for a build to complete
+   wait       Waits for a build to complete
    personal   Sends a personal build request
    artifact   Gets all artifacts for given project and build
-   help, h 	  Shows a list of commands or help for one command
+   help, h    Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
    --addr 'http://pulse/xmlrpc'	Pulse Remote API endpoint
