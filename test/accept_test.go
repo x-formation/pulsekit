@@ -1,13 +1,12 @@
-package accept_test
+package accept
 
 import (
 	"testing"
 	"time"
 
+	"github.com/rjeczalik/fakerpc"
 	"github.com/x-formation/pulsekit"
 	"github.com/x-formation/pulsekit/util"
-
-	"github.com/rjeczalik/fakerpc"
 )
 
 const (
