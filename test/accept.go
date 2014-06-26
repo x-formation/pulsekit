@@ -1,1 +1,1 @@
-package accept_test
+package accept
