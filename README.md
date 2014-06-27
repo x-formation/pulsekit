@@ -1,24 +1,26 @@
 pulsekit [![GoDoc](https://godoc.org/github.com/x-formation/pulsekit?status.png)](https://godoc.org/github.com/x-formation/pulsekit) [![Build Status](https://travis-ci.org/x-formation/pulsekit.png?branch=master)](https://travis-ci.org/x-formation/pulsekit)
 ========
 
-Repository for tools / libraries built around Zutubi Pulse server for automation purposes. This most notable tools in this repository are:
+Pulsekit is a repository for tools/libraries used to interface with Zutubi Pulse server for automation purposes. The most notable tools in this repository are:
 
 ## cmd/pulsecli [![GoDoc](https://godoc.org/github.com/x-formation/pulsekit/cmd/pulsecli?status.png)](https://godoc.org/github.com/x-formation/pulsekit/cmd/pulsecli)
 
-Command-line tool for communicating with Zutubi Pulse server via its Remote API.
+The cmd/pulsecli is a commdn-line tool for communicating with Zutubi Pulse server using its Remote API.
 
 #### Installation
 
-Just go get it:
+To start using pulsecli, run the following commands from your terminal:
 
 ```
 ~ $ go get github.com/x-formation/pulsekit/cmd/pulsecli
 ~ $ GOBIN=~/bin go install github.com/x-formation/pulsekit/cmd/pulsecli
 ```
 
-Ensure you have `$GOPATH` set and `$GOBIN` (or `$GOPATH`/bin) is in your `$PATH`.
+NOTE: Make sure that your `$GOPATH` is set and `$GOBIN` (or `$GOPATH`/bin) is in `$PATH`.
 
 #### Usage
+
+You can find descriptions of some of the most common commands and global options below.
 
 ```
 NAME:
@@ -64,22 +66,23 @@ GLOBAL OPTIONS:
 
 #### PRTG output
 
-Passing `--prtg` flag makes the output PRTG-friendly - when command exists with:
+Passing `--prtg` flag makes the output PRTG-friendly. When the command's exit code is:
 
-* exit code 0, the output is:
+* 0, the output is:
 
 `0:0:OK`
 
-* exit code different than 0, the output is:
+* different than 0, the output is:
 
 `2:1:"<error message here>"`
 
 #### Examples
 
+The following examples present syntax for some operations you can perform using pulsecli that do following tasks:
+
 ###### Store credentials in `$HOME`
 
-Credentials are stored for a current user in `~/.pulsecli`. They're stored as
-plain text, so be careful if others have access to your `$HOME` directory.
+Credentials for the current user are stored in `~/.pulsecli`. Because they're stored as plain text, you should be aware that others may have access to your `$HOME` directory, which may pose security risks.
 
 ```
 ~ $ pulsecli --user $USER --pass $PASS login
@@ -125,7 +128,7 @@ LM-X - Tier 1 (build 1356):
 ###### Trigger builds for all the projects except `LAC`
 
 `trigger` outputs a list of `<request id>	<project name>` pairs, separated
-by a tab. In order to obtain the build ID run `pulsecli build <request id>`.
+by a tab. To obtain the build ID, run `pulsecli build <request id>`.
 
 ```
 ~ $ pulsecli --project '^((\S)[^C]+|Pulse CLI.*)$' trigger
@@ -228,10 +231,7 @@ Build - Mac OSX Universal 10.9 - API
 
 ###### List all the agents
 
-`agents` outputs a list of `<agent hostname>	<agent name>` pairs, separated
-by a tab. It tries to parse an agent's URL and output a hostname only. When
-parsing fails (e.g. Pulse 2.6.19 does not put ipv6 addresses in brackets)
-it outputs an URL instead.
+`agents` outputs a list of `<agent hostname>	<agent name>` pairs, separated by a tab. It tries to parse agent URL and output its hostname value. When parsing fails (e.g. Pulse 2.6.19 does not put ipv6 addresses in brackets), it outputs an URL instead.
 
 ```
 ~ $ pulsecli agents
@@ -256,7 +256,7 @@ The output is in the YAML format.
 
 The `--build` or `-b` flag expects either:
 
-  * a real build number
+  * A real build number
   * 0 which means latest build number
 ```
 ~ $ pulsecli -p 'LM-X - Release Build - Tier 2' -b 0 status
@@ -276,7 +276,7 @@ LM-X - Release Build - Tier 2 (build 547):
   reason: manual trigger by rjeczalik
 ...
 ```
-  * a negative number being an relative offset to the latest build number
+  * A negative number being an relative offset to the latest build number
 ```
 ~ $ pulsecli -p 'LM-X - Release Build - Tier 2' -b -10 status
 LM-X - Release Build - Tier 2 (build 537):
@@ -297,12 +297,14 @@ LM-X - Release Build - Tier 2 (build 537):
 
 ###### Download all artifacts of `License Activation Center - API` project for given build
 
-The `--output` or `-o` flag expects destination to download artifacts into.
-If it's ommited, current working dir is taken
+The `--output` or `-o` flag is a path to the directory where the artifacts are placed. Unless otherwise specified, the default directory is the current working directory.
+
 ```
 ~ $ pulsecli -p '^License Activation Center - API$' -b 191 -o arts artifact
 ```
-After downloading artifacts we get calatog structure like in pulse
+
+After the downlaod of the artifacts is complete, the created catalog structure resembles the one of Pulse, as shown below.
+
 ```
 ~ tree arts
 arts
@@ -330,5 +332,3 @@ arts
 ...
 ...
 ```
-You can pass some complex regexp as `-p` parameter. It will cause to download artifacts for all
-projects which names matches the regexp into separate catalogs.
