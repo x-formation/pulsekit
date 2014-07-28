@@ -1,4 +1,4 @@
-pulsekit [![GoDoc](https://godoc.org/github.com/x-formation/pulsekit?status.png)](https://godoc.org/github.com/x-formation/pulsekit) [![Build Status](https://travis-ci.org/x-formation/pulsekit.png?branch=master)](https://travis-ci.org/x-formation/pulsekit)
+pulsekit [![GoDoc](https://godoc.org/github.com/x-formation/pulsekit?status.png)](https://godoc.org/github.com/x-formation/pulsekit) [![Build Status](https://travis-ci.org/x-formation/pulsekit.png?branch=master)](https://travis-ci.org/x-formation/pulsekit)[![Build status](https://ci.appveyor.com/api/projects/status/s86kj6bfg95p8iy5)](https://ci.appveyor.com/project/rjeczalik/pulsekit)
 ========
 
 Pulsekit is a repository for tools/libraries used to interface with Zutubi Pulse server for automation purposes. The most notable tools in this repository are:
