@@ -1,10 +1,20 @@
-language: go
-go:
- - 1.2.2
- - tip
+language: objective-c
+
 install:
+ - bash < <(curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer)
+ - source $HOME/.gvm/scripts/gvm
+ - gvm install go1.3 --binary || gvm install go1.3
+ - gvm use go1.3
+ - export GOPATH=~
+ - export PATH=$GOPATH/bin:$PATH
+ - mkdir -p ~/src/github.com
+ - mv ../../x-formation ~/src/github.com
+ - cd ~/src/github.com/x-formation/pulsekit
+ - go version
  - go get code.google.com/p/go.tools/cmd/vet
  - go get -t -v ./...
+ - go install -a -race std
+
 script:
  - go tool vet -all .
  - go build ./...
