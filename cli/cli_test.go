@@ -71,6 +71,13 @@ func (mcli *MockCLI) Login() (out []interface{}, err []interface{}) {
 	return
 }
 
+func (mcli *MockCLI) Clean() (out []interface{}, err []interface{}) {
+	mcli.cli.Out = func(i ...interface{}) { out = i }
+	mcli.cli.Err = func(i ...interface{}) { err = i }
+	mcli.cli.Clean(mcli.ctx())
+	return
+}
+
 func (mcli *MockCLI) Trigger() (out []interface{}, err []interface{}) {
 	mcli.cli.Out = func(i ...interface{}) { out = i }
 	mcli.cli.Err = func(i ...interface{}) { err = i }
@@ -358,6 +365,20 @@ func TestLogin(t *testing.T) {
 	}
 	if err != nil && len(err) != 0 {
 		t.Error("expected err to be empty")
+	}
+}
+
+func TestClean(t *testing.T) {
+	mc, mcli, f := fixture()
+	f.Project = "^Go.*"
+	mc.Err, mc.P = make([]error, 3), []string{"Go - Master", "Go - Devel", "C++"}
+	out, err := mcli.Clean()
+	mc.Check(t)
+	if n := len(err); n != 0 {
+		t.Fatalf("want len(err)=0; got %d", n)
+	}
+	if p := []interface{}{"Go - Master", "Go - Devel"}; !reflect.DeepEqual(out, p) {
+		t.Fatalf("want out=%v; got %v", p, out)
 	}
 }
 
