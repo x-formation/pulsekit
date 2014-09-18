@@ -156,6 +156,10 @@ func New() *CLI {
 		Usage:  "Triggers a build",
 		Action: cl.Trigger,
 	}, {
+		Name:   "clean",
+		Usage:  "Cleans working directory",
+		Action: cl.Clean,
+	}, {
 		Name:   "init",
 		Usage:  "Initialises a project",
 		Action: cl.Init,
@@ -415,6 +419,28 @@ func (cli *CLI) Login(ctx *cli.Context) {
 	cli.Out()
 }
 
+// Clean is a command line interface o a Clear method of a pulse.Client.
+// It triggers a working directory cleanup for each project requested.
+func (cli *CLI) Clean(ctx *cli.Context) {
+	if err := cli.init(ctx); err != nil {
+		cli.Err(err)
+		return
+	}
+	p, err := cli.c.Projects()
+	msg := make([]interface{}, 0, len(p))
+	for _, p := range p {
+		if !cli.p.MatchString(p) {
+			continue
+		}
+		if err = cli.c.Clear(p); err != nil {
+			cli.Err(err)
+			return
+		}
+		msg = append(msg, p)
+	}
+	cli.Out(msg...)
+}
+
 // Trigger is a command line interface to a Trigger method of a pulse.Client.
 // It outputs pairs of a request ID and a project name one per line, for every
 // project requested. Values are separated by a tab.
@@ -633,10 +659,8 @@ func (cli *CLI) Artifact(ctx *cli.Context) {
 		cli.Err(err)
 		return
 	}
-
 	var build int64
-	dir := cli.o.String()
-	url := strings.Trim(cli.cred.URL, "/xmlrpc")
+	dir, url := cli.o.String(), strings.Trim(cli.cred.URL, "/xmlrpc")
 	for _, p := range projects {
 		if !cli.p.MatchString(p) {
 			continue
