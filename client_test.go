@@ -7,8 +7,8 @@ import (
 )
 
 func fixture(t *testing.T) (Client, func()) {
-	addr, teardown := fakerpc.Fixture(t)
-	c, err := NewClient(addr+"/xmlrpc", "pulse_test", "pulse_test")
+	url, teardown := fakerpc.Fixture(t)
+	c, err := NewClient(url+"/xmlrpc", "pulse_test", "pulse_test")
 	if err != nil {
 		t.Fatalf("expected err to be nil, was %q instead", err)
 	}

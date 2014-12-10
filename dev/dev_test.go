@@ -9,9 +9,9 @@ import (
 )
 
 func fixture(t *testing.T) (*mock.Client, Tool, func()) {
-	addr, teardown := fakerpc.Fixture(t)
+	url, teardown := fakerpc.Fixture(t)
 	mc := mock.NewClient()
-	tool, err := New(mc, addr, "pulse_test", "pulse_test")
+	tool, err := New(mc, url, "pulse_test", "pulse_test")
 	if err != nil {
 		t.Skip("pulsekit/dev: skipping test: ", err)
 	}

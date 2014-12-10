@@ -78,7 +78,7 @@ type client struct {
 // a RPC client.
 func NewClient(url, user, pass string) (Client, error) {
 	c, err := &client{d: 15 * time.Second}, (error)(nil)
-	if c.rpc, err = xmlrpc.NewClient(url, nil); err != nil {
+	if c.rpc, err = xmlrpc.NewClient(url+"/xmlrpc", nil); err != nil {
 		return nil, err
 	}
 	if err = c.rpc.Call("RemoteApi.login", []interface{}{user, pass}, &c.tok); err != nil {
