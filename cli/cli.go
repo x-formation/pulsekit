@@ -10,7 +10,6 @@ import (
 	"os/user"
 	"path/filepath"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/x-formation/pulsekit"
@@ -134,7 +133,7 @@ func New() *CLI {
 	cl.app.Name, cl.app.Version = "pulsecli", "0.1.0"
 	cl.app.Usage = "a command-line client for a Pulse server"
 	cl.app.Flags = []cli.Flag{
-		cli.StringFlag{Name: "url", Value: "http://pulse/xmlrpc", Usage: "Pulse Remote API endpoint"},
+		cli.StringFlag{Name: "url", Value: "http://pulse", Usage: "Pulse Remote API endpoint"},
 		cli.StringFlag{Name: "user", Usage: "Pulse user name"},
 		cli.StringFlag{Name: "pass", Usage: "Pulse user password"},
 		cli.StringFlag{Name: "agent, a", Value: ".*", Usage: "Agent name pattern"},
@@ -253,9 +252,6 @@ func (cli *CLI) Personal(ctx *cli.Context) {
 		cli.patch = p
 	}
 	url := cli.cred.URL
-	if n := strings.Index(cli.cred.URL, "/xmlrpc"); n != -1 {
-		url = url[:n]
-	}
 	if cli.v, err = cli.Dev(cli.c, url, cli.cred.User, cli.cred.Pass); err != nil {
 		cli.Err(err)
 		return
@@ -660,7 +656,7 @@ func (cli *CLI) Artifact(ctx *cli.Context) {
 		return
 	}
 	var build int64
-	dir, url := cli.o.String(), strings.Trim(cli.cred.URL, "/xmlrpc")
+	dir, url := cli.o.String(), cli.cred.URL
 	for _, p := range projects {
 		if !cli.p.MatchString(p) {
 			continue
