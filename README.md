@@ -48,7 +48,7 @@ COMMANDS:
    help, h    Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --addr 'http://pulse/xmlrpc'	Pulse Remote API endpoint
+   --url 'http://pulse/xmlrpc'	Pulse Remote API endpoint
    --user ''              Pulse user name
    --pass ''              Pulse user password
    --agent, -a '.*'       Agent name patter

@@ -47,7 +47,7 @@ type MockCLI struct {
 
 func (mcli *MockCLI) ctx() *cli.Context {
 	g := flag.NewFlagSet("pulsecli test", flag.PanicOnError)
-	g.String("addr", mcli.f.URL, "")
+	g.String("url", mcli.f.URL, "")
 	g.String("pass", mcli.f.Pass, "")
 	g.String("agent", mcli.f.Agent, "")
 	g.String("project", mcli.f.Project, "")

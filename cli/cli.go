@@ -134,7 +134,7 @@ func New() *CLI {
 	cl.app.Name, cl.app.Version = "pulsecli", "0.1.0"
 	cl.app.Usage = "a command-line client for a Pulse server"
 	cl.app.Flags = []cli.Flag{
-		cli.StringFlag{Name: "addr", Value: "http://pulse/xmlrpc", Usage: "Pulse Remote API endpoint"},
+		cli.StringFlag{Name: "url", Value: "http://pulse/xmlrpc", Usage: "Pulse Remote API endpoint"},
 		cli.StringFlag{Name: "user", Usage: "Pulse user name"},
 		cli.StringFlag{Name: "pass", Usage: "Pulse user password"},
 		cli.StringFlag{Name: "agent, a", Value: ".*", Usage: "Agent name pattern"},
@@ -212,7 +212,7 @@ func (cli *CLI) init(ctx *cli.Context) error {
 		cli.c, err = cli.Client(cli.cred.URL, cli.cred.User, cli.cred.Pass)
 	}
 	if err != nil {
-		cli.cred = &Creds{ctx.GlobalString("addr"), ctx.GlobalString("user"), ctx.GlobalString("pass")}
+		cli.cred = &Creds{ctx.GlobalString("url"), ctx.GlobalString("user"), ctx.GlobalString("pass")}
 		if cli.c, err = cli.Client(cli.cred.URL, cli.cred.User, cli.cred.Pass); err != nil {
 			return err
 		}
@@ -403,7 +403,7 @@ func (cli *CLI) Login(ctx *cli.Context) {
 		return
 	}
 	old := []*string{&cli.cred.URL, &cli.cred.User, &cli.cred.Pass}
-	for i, s := range []string{ctx.GlobalString("addr"), ctx.GlobalString("user"), ctx.GlobalString("pass")} {
+	for i, s := range []string{ctx.GlobalString("url"), ctx.GlobalString("user"), ctx.GlobalString("pass")} {
 		if s != "" {
 			(*old[i]) = s
 		}

@@ -15,8 +15,8 @@ const (
 )
 
 func fixture(t *testing.T) (pulse.Client, func()) {
-	addr, teardown := fakerpc.Fixture(t)
-	c, err := pulse.NewClient(addr+"/xmlrpc", "pulse_test", "pulse_test")
+	url, teardown := fakerpc.Fixture(t)
+	c, err := pulse.NewClient(url+"/xmlrpc", "pulse_test", "pulse_test")
 	if err != nil {
 		t.Fatalf("expected err to be nil, was %v instead", err)
 	}
