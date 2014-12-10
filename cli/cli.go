@@ -219,12 +219,12 @@ func (cli *CLI) init(ctx *cli.Context) error {
 		cli.c, err = cli.Client(cli.cred.URL, cli.cred.User, cli.cred.Pass)
 	}
 	if err != nil {
-		cli.cred = &Creds{ctx.GlobalString("url"), ctx.String("user"), ctx.String("pass")}
+		cli.cred = &Creds{ctx.GlobalString("url"), ctx.GlobalString("user"), ctx.GlobalString("pass")}
 		if cli.c, err = cli.Client(cli.cred.URL, cli.cred.User, cli.cred.Pass); err != nil {
 			return err
 		}
 	}
-	a, p, s, o := ctx.GlobalString("agent"), ctx.GlobalString("project"), ctx.GlobalString("stage"), ctx.String("output")
+	a, p, s, o := ctx.GlobalString("agent"), ctx.GlobalString("project"), ctx.GlobalString("stage"), ctx.GlobalString("output")
 	if cli.a, err = regexp.Compile(a); err != nil {
 		return err
 	}
@@ -240,7 +240,7 @@ func (cli *CLI) init(ctx *cli.Context) error {
 	if cli.d, err = time.ParseDuration(ctx.GlobalString("timeout")); err != nil {
 		return err
 	}
-	cli.n, cli.rev = int64(ctx.GlobalInt("build")), ctx.String("revision")
+	cli.n, cli.rev = int64(ctx.GlobalInt("build")), ctx.GlobalString("revision")
 	cli.c.SetTimeout(cli.d)
 	return nil
 }
@@ -252,7 +252,7 @@ func (cli *CLI) Personal(ctx *cli.Context) {
 		cli.Err(err)
 		return
 	}
-	if p := ctx.String("patch"); p != "" {
+	if p := ctx.GlobalString("patch"); p != "" {
 		if _, err = os.Stat(p); err != nil {
 			cli.Err(err)
 			return
@@ -407,7 +407,7 @@ func (cli *CLI) Login(ctx *cli.Context) {
 		return
 	}
 	old := []*string{&cli.cred.URL, &cli.cred.User, &cli.cred.Pass}
-	for i, s := range []string{ctx.GlobalString("url"), ctx.String("user"), ctx.String("pass")} {
+	for i, s := range []string{ctx.GlobalString("url"), ctx.GlobalString("user"), ctx.GlobalString("pass")} {
 		if s != "" {
 			(*old[i]) = s
 		}
