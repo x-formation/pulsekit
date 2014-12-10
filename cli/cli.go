@@ -132,7 +132,8 @@ func New() *CLI {
 	}
 	cl.app.Name, cl.app.Version = "pulsecli", "0.1.0"
 	cl.app.Usage = "a command-line client for a Pulse server"
-	cl.app.Flags = []cli.Flag{
+	cl.app.EnableBashCompletion = true
+        cl.app.Flags = []cli.Flag{
 		cli.StringFlag{Name: "url", Value: "http://pulse", Usage: "Pulse Remote API endpoint"},
 		cli.StringFlag{Name: "agent, a", Value: ".*", Usage: "Agent name pattern"},
 		cli.StringFlag{Name: "project, p", Value: ".*", Usage: `Project name pattern (or "personal")`},
