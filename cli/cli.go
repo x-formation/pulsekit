@@ -92,6 +92,28 @@ func (fileStore) Save(c *Creds) error {
 	return err
 }
 
+func matchProjects(cli *CLI, list []string) []string {
+        mp := make([]string, 0)
+        for _, p := range list {
+            if (cli.p == p) {
+                mp = append(mp, p)
+            }
+        }
+        if len(mp) == 0 {
+                var err error
+                var rp *regexp.Regexp
+                if rp, err = regexp.Compile(cli.p); err != nil {
+                         cli.Err(err)
+                }
+                for _, p := range list {
+                        if rp.MatchString(p) {
+                                mp = append(mp, p)
+                        }
+                }
+        }
+        return mp;
+}
+
 // CLI is a facade that implements cmd/pulsecli tool.
 type CLI struct {
 	// Client is used to communicate with a Pulse server.
@@ -109,7 +131,7 @@ type CLI struct {
 	c     pulse.Client
 	v     dev.Tool
 	a     *regexp.Regexp
-	p     *regexp.Regexp
+	p     string
 	s     *regexp.Regexp
 	o     *regexp.Regexp
 	patch string
@@ -225,11 +247,9 @@ func (cli *CLI) init(ctx *cli.Context) error {
 			return err
 		}
 	}
-	a, p, s, o := ctx.GlobalString("agent"), ctx.GlobalString("project"), ctx.GlobalString("stage"), ctx.GlobalString("output")
+        cli.p = ctx.GlobalString("project")
+	a, s, o := ctx.GlobalString("agent"), ctx.GlobalString("stage"), ctx.GlobalString("output")
 	if cli.a, err = regexp.Compile(a); err != nil {
-		return err
-	}
-	if cli.p, err = regexp.Compile(p); err != nil {
 		return err
 	}
 	if cli.s, err = regexp.Compile(s); err != nil {
@@ -267,7 +287,7 @@ func (cli *CLI) Personal(ctx *cli.Context) {
 	}
 	p := &dev.Personal{
 		Patch:    cli.patch,
-		Project:  cli.p.String(),
+		Project:  cli.p,
 		Revision: cli.rev,
 	}
 	if s := cli.s.String(); s != "" && s != ".*" {
@@ -304,7 +324,7 @@ func (cli *CLI) Wait(ctx *cli.Context) {
 		cli.Err(err)
 		return
 	}
-	p := cli.p.String()
+	p := cli.p
 	if p == "" || p == ".*" {
 		cli.Err("pulsecli: a --project name is missing")
 		return
@@ -340,17 +360,14 @@ func (cli *CLI) Init(ctx *cli.Context) {
 		return
 	}
 	msg := make([]interface{}, 0, len(p))
-	for _, p := range p {
-		if !cli.p.MatchString(p) {
-			continue
-		}
-		ok, err := cli.c.Init(p)
-		if err != nil {
-			cli.Err(err)
-			return
-		}
-		msg = append(msg, fmt.Sprintf("%v\t%q", ok, p))
-	}
+	for _, p := range matchProjects(cli, p) {
+                ok, err := cli.c.Init(p)
+                if err != nil {
+                        cli.Err(err)
+                        return
+                }
+                msg = append(msg, fmt.Sprintf("%v\t%q", ok, p)) 
+        }
 	cli.Out(msg...)
 }
 
@@ -362,7 +379,7 @@ func (cli *CLI) Stages(ctx *cli.Context) {
 		cli.Err(err)
 		return
 	}
-	p := cli.p.String()
+	p := cli.p
 	if p == "" || p == ".*" {
 		cli.Err("pulsecli: a --project name is missing")
 		return
@@ -433,10 +450,7 @@ func (cli *CLI) Clean(ctx *cli.Context) {
 	}
 	p, err := cli.c.Projects()
 	msg := make([]interface{}, 0, len(p))
-	for _, p := range p {
-		if !cli.p.MatchString(p) {
-			continue
-		}
+	for _, p := range matchProjects(cli, p) {
 		if err = cli.c.Clear(p); err != nil {
 			cli.Err(err)
 			return
@@ -460,10 +474,7 @@ func (cli *CLI) Trigger(ctx *cli.Context) {
 		return
 	}
 	msg := make([]interface{}, 0, len(p))
-	for _, p := range p {
-		if !cli.p.MatchString(p) {
-			continue
-		}
+	for _, p := range matchProjects(cli, p) {
 		if err = cli.c.Clear(p); err != nil {
 			cli.Err(err)
 			return
@@ -494,7 +505,7 @@ func (cli *CLI) Health(ctx *cli.Context) {
 		cli.Err(err)
 		return
 	}
-	if p := cli.p.String(); p != "" && p != ".*" {
+	if p := cli.p; p != "" && p != ".*" {
 		cli.healthProject(ctx)
 	} else {
 		cli.healthPulse(ctx)
@@ -508,10 +519,7 @@ func (cli *CLI) healthProject(ctx *cli.Context) {
 		return
 	}
 	all := make(map[string]pulse.Messages)
-	for _, p := range p {
-		if !cli.p.MatchString(p) {
-			continue
-		}
+	for _, p := range matchProjects(cli, p) {
 		id, err := util.NormalizeBuildOrRequestID(cli.c, p, cli.n)
 		if err != nil {
 			cli.Err(err)
@@ -613,17 +621,14 @@ func (cli *CLI) Status(ctx *cli.Context) {
 		return
 	}
 	var p []string
-	if cli.p.String() == pulse.ProjectPersonal {
+	if cli.p == pulse.ProjectPersonal {
 		p = append(p, pulse.ProjectPersonal)
 	} else if p, err = cli.c.Projects(); err != nil {
 		cli.Err(err)
 		return
 	}
 	m := make(map[string][]pulse.BuildResult)
-	for _, p := range p {
-		if !cli.p.MatchString(p) {
-			continue
-		}
+	for _, p := range matchProjects(cli, p) {
 		id, err := util.NormalizeBuildOrRequestID(cli.c, p, cli.n)
 		if err != nil {
 			cli.Err(err)
@@ -658,7 +663,7 @@ func (cli *CLI) Artifact(ctx *cli.Context) {
 		cli.Err(err)
 		return
 	}
-	if cli.p.String() == pulse.ProjectPersonal {
+	if cli.p == pulse.ProjectPersonal {
 		projects = append(projects, pulse.ProjectPersonal)
 	} else if projects, err = cli.c.Projects(); err != nil {
 		cli.Err(err)
@@ -666,10 +671,7 @@ func (cli *CLI) Artifact(ctx *cli.Context) {
 	}
 	var build int64
 	dir, url := cli.o.String(), cli.cred.URL
-	for _, p := range projects {
-		if !cli.p.MatchString(p) {
-			continue
-		}
+	for _, p := range matchProjects(cli, projects) {
 		if build, err = util.NormalizeBuildOrRequestID(cli.c, p, cli.n); err != nil {
 			cli.Err(err)
 			return
