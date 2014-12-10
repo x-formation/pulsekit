@@ -237,7 +237,7 @@ func (cli *CLI) init(ctx *cli.Context) error {
 		cli.Err, cli.Out = prtg.Err, prtg.Out
 	}
 	var err, err2 error
-        cli.cred = &Creds{ctx.GlobalString("url"), ctx.GlobalString("user"), ctx.GlobalString("pass")}
+        cli.cred = &Creds{ctx.GlobalString("url"), ctx.String("user"), ctx.String("pass")}
         if cli.c, err = cli.Client(cli.cred.URL, cli.cred.User, cli.cred.Pass); err != nil {
                 if cli.cred, err2 = cli.Store.Load(); err2 == nil {
                         if cli.c, err = cli.Client(cli.cred.URL, cli.cred.User, cli.cred.Pass); err != nil {
