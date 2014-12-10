@@ -134,22 +134,28 @@ func New() *CLI {
 	cl.app.Usage = "a command-line client for a Pulse server"
 	cl.app.Flags = []cli.Flag{
 		cli.StringFlag{Name: "url", Value: "http://pulse", Usage: "Pulse Remote API endpoint"},
-		cli.StringFlag{Name: "user", Usage: "Pulse user name"},
-		cli.StringFlag{Name: "pass", Usage: "Pulse user password"},
 		cli.StringFlag{Name: "agent, a", Value: ".*", Usage: "Agent name pattern"},
 		cli.StringFlag{Name: "project, p", Value: ".*", Usage: `Project name pattern (or "personal")`},
 		cli.StringFlag{Name: "stage, s", Value: ".*", Usage: "Stage name pattern"},
 		cli.StringFlag{Name: "timeout, t", Value: "15s", Usage: "Maximum wait time"},
-		cli.StringFlag{Name: "patch", Usage: "Patch file for a personal build"},
 		cli.StringFlag{Name: "revision, r", Value: "HEAD", Usage: "Revision to use for personal build"},
 		cli.IntFlag{Name: "build, b", Usage: "Build number"},
-		cli.BoolFlag{Name: "prtg", Usage: "PRTG-friendly output"},
-		cli.StringFlag{Name: "output, o", Value: ".", Usage: "Output for fetched artifacts"},
+                cli.BoolFlag{Name: "prtg", Usage: "PRTG-friendly output"},
 	}
+        loginFlags := []cli.Flag{
+             cli.StringFlag{Name: "user", Usage: "Pulse user name"},
+             cli.StringFlag{Name: "pass", Usage: "Pulse user password"},
+        }
+        personalFlags := []cli.Flag{
+            cli.StringFlag{Name: "patch", Usage: "Patch file for a personal build"},
+            cli.StringFlag{Name: "revision, r", Value: "HEAD", Usage: "Revision to use for personal build"},
+        }
+        artifactsFlags := []cli.Flag{cli.StringFlag{Name: "output, o", Value: ".", Usage: "Output for fetched artifacts"}}
 	cl.app.Commands = []cli.Command{{
 		Name:   "login",
 		Usage:  "Creates or updates session for current user",
 		Action: cl.Login,
+                Flags:  loginFlags,
 	}, {
 		Name:   "trigger",
 		Usage:  "Triggers a build",
@@ -194,10 +200,12 @@ func New() *CLI {
 		Name:   "personal",
 		Usage:  "Sends a personal build request",
 		Action: cl.Personal,
+                Flags:  personalFlags,
 	}, {
 		Name:   "artifact",
 		Usage:  "Downloads all the artifact files",
 		Action: cl.Artifact,
+                Flags:  artifactsFlags,
 	}}
 	return cl
 }
@@ -211,12 +219,12 @@ func (cli *CLI) init(ctx *cli.Context) error {
 		cli.c, err = cli.Client(cli.cred.URL, cli.cred.User, cli.cred.Pass)
 	}
 	if err != nil {
-		cli.cred = &Creds{ctx.GlobalString("url"), ctx.GlobalString("user"), ctx.GlobalString("pass")}
+		cli.cred = &Creds{ctx.GlobalString("url"), ctx.String("user"), ctx.String("pass")}
 		if cli.c, err = cli.Client(cli.cred.URL, cli.cred.User, cli.cred.Pass); err != nil {
 			return err
 		}
 	}
-	a, p, s, o := ctx.GlobalString("agent"), ctx.GlobalString("project"), ctx.GlobalString("stage"), ctx.GlobalString("output")
+	a, p, s, o := ctx.GlobalString("agent"), ctx.GlobalString("project"), ctx.GlobalString("stage"), ctx.String("output")
 	if cli.a, err = regexp.Compile(a); err != nil {
 		return err
 	}
@@ -232,7 +240,7 @@ func (cli *CLI) init(ctx *cli.Context) error {
 	if cli.d, err = time.ParseDuration(ctx.GlobalString("timeout")); err != nil {
 		return err
 	}
-	cli.n, cli.rev = int64(ctx.GlobalInt("build")), ctx.GlobalString("revision")
+	cli.n, cli.rev = int64(ctx.GlobalInt("build")), ctx.String("revision")
 	cli.c.SetTimeout(cli.d)
 	return nil
 }
@@ -244,7 +252,7 @@ func (cli *CLI) Personal(ctx *cli.Context) {
 		cli.Err(err)
 		return
 	}
-	if p := ctx.GlobalString("patch"); p != "" {
+	if p := ctx.String("patch"); p != "" {
 		if _, err = os.Stat(p); err != nil {
 			cli.Err(err)
 			return
@@ -399,7 +407,7 @@ func (cli *CLI) Login(ctx *cli.Context) {
 		return
 	}
 	old := []*string{&cli.cred.URL, &cli.cred.User, &cli.cred.Pass}
-	for i, s := range []string{ctx.GlobalString("url"), ctx.GlobalString("user"), ctx.GlobalString("pass")} {
+	for i, s := range []string{ctx.GlobalString("url"), ctx.String("user"), ctx.String("pass")} {
 		if s != "" {
 			(*old[i]) = s
 		}
