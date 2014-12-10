@@ -48,19 +48,14 @@ COMMANDS:
    help, h    Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --addr 'http://pulse/xmlrpc'	Pulse Remote API endpoint
-   --user ''              Pulse user name
-   --pass ''              Pulse user password
+   --url 'http://pulse'	Pulse Remote API endpoint
    --agent, -a '.*'       Agent name patter
    --project, -p '.*'     Project name pattern (or "personal")
    --stage, -s '.*'       Stage name pattern
    --timeout, -t '15s'    Maximum wait time
-   --patch ''             Patch file for a personal build
-   --revision, -r 'HEAD'  Revision to use for personal build
-   --build, -b '0'        Build number
    --prtg                 PRTG-friendly output
+   --build, -b '0'        Build number
    --version, -v          print the version
-   --output, -o 		  artifacts download destination
    --help, -h             show help
 ```
 
@@ -85,7 +80,7 @@ The following examples present syntax for some operations you can perform using 
 Credentials for the current user are stored in `~/.pulsecli`. Because they're stored as plain text, you should be aware that others may have access to your `$HOME` directory, which may pose security risks.
 
 ```
-~ $ pulsecli --user $USER --pass $PASS login
+~ $ pulsecli login --user $USER --pass $PASS
 ~ $ pulsecli --prtg health
 0:0:OK
 ```
@@ -164,7 +159,7 @@ by a tab. To obtain the build ID, run `pulsecli build <request id>`.
 
 ```
 ~ $ git diff HEAD~1 > review-1234.diff
-~ $ pulsecli -p 'Pulse CLI' --patch review-1234.diff personal
+~ $ pulsecli -p 'Pulse CLI' personal --patch review-1234.diff
 542
 ```
 
@@ -172,7 +167,7 @@ by a tab. To obtain the build ID, run `pulsecli build <request id>`.
 
 ```
 ~ $ git diff HEAD~1 > review-4321.diff
-~ $ pulsecli -p 'LM-X - Tier 1' --patch review-4321.diff --stage 'Build - (MAC OS X|Linux x86$)' personal
+~ $ pulsecli -p 'LM-X - Tier 1' --stage 'Build - (MAC OS X|Linux x86$)' personal --patch review-4321.diff
 207
 ```
 
@@ -300,7 +295,7 @@ LM-X - Release Build - Tier 2 (build 537):
 The `--output` or `-o` flag is a path to the directory where the artifacts are placed. Unless otherwise specified, the default directory is the current working directory.
 
 ```
-~ $ pulsecli -p '^License Activation Center - API$' -b 191 -o arts artifact
+~ $ pulsecli -p '^License Activation Center - API$' -b 191 artifact -o arts
 ```
 
 After the downlaod of the artifacts is complete, the created catalog structure resembles the one of Pulse, as shown below.

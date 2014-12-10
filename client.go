@@ -78,7 +78,7 @@ type client struct {
 // a RPC client.
 func NewClient(url, user, pass string) (Client, error) {
 	c, err := &client{d: 15 * time.Second}, (error)(nil)
-	if c.rpc, err = xmlrpc.NewClient(url, nil); err != nil {
+	if c.rpc, err = xmlrpc.NewClient(url+"/xmlrpc", nil); err != nil {
 		return nil, err
 	}
 	if err = c.rpc.Call("RemoteApi.login", []interface{}{user, pass}, &c.tok); err != nil {
@@ -149,7 +149,7 @@ func (c *client) BuildResult(project string, id int64) (res []BuildResult, err e
 		return nil, err
 	}
 	if res == nil || len(res) == 0 {
-		return nil, &InvalidBuildError{ID: id, Status: BuildUnknown}
+		return nil, &InvalidBuildError{ID: id, Status: BuildNeverBuilt}
 	}
 	return res, nil
 }
@@ -185,7 +185,7 @@ func (c *client) LatestBuildResult(project string) (res []BuildResult, err error
 		return nil, err
 	}
 	if res == nil || len(res) == 0 {
-		return nil, &InvalidBuildError{Status: BuildUnknown}
+		return nil, &InvalidBuildError{Status: BuildNeverBuilt}
 	}
 	return res, nil
 }
