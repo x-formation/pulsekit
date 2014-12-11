@@ -45,6 +45,7 @@ type BuildStatus string
 
 const (
 	BuildUnknown     BuildStatus = "UNKNOWN"
+  BuildNeverBuilt  BuildStatus = "NEVER BUILT"
 	BuildUnhandled   BuildStatus = "UNHANDLED"
 	BuildRejected    BuildStatus = "REJECTED"
 	BuildAssimilated BuildStatus = "ASSIMILATED"

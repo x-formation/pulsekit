@@ -521,6 +521,10 @@ func (cli *CLI) healthProject(ctx *cli.Context) {
 	for _, p := range matchProjects(cli, p) {
 		id, err := util.NormalizeBuildOrRequestID(cli.c, p, cli.n)
 		if err != nil {
+      if err.(*pulse.InvalidBuildError).Status == pulse.BuildNeverBuilt {
+        fmt.Println("Build",p,"never has been built.")
+        continue
+      }
 			cli.Err(err)
 			return
 		}

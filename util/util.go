@@ -88,6 +88,9 @@ func NormalizeBuildOrRequestID(c pulse.Client, p string, reqorid int64) (int64, 
 		if _, ok := err.(*pulse.InvalidBuildError); !ok {
 			return 0, err
 		}
+    if err.(*pulse.InvalidBuildError).Status == pulse.BuildNeverBuilt {
+      return 0, err
+    }
 		id = reqorid
 	}
 	// In case reqorid is request ID.

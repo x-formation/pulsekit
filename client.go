@@ -149,7 +149,7 @@ func (c *client) BuildResult(project string, id int64) (res []BuildResult, err e
 		return nil, err
 	}
 	if res == nil || len(res) == 0 {
-		return nil, &InvalidBuildError{ID: id, Status: BuildUnknown}
+		return nil, &InvalidBuildError{ID: id, Status: BuildNeverBuilt}
 	}
 	return res, nil
 }
@@ -184,8 +184,8 @@ func (c *client) LatestBuildResult(project string) (res []BuildResult, err error
 	if err != nil {
 		return nil, err
 	}
-	if res == nil || len(res) == 0 {
-		return nil, &InvalidBuildError{Status: BuildUnknown}
+  if res == nil || len(res) == 0 {
+		return nil, &InvalidBuildError{Status: BuildNeverBuilt}
 	}
 	return res, nil
 }
