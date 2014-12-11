@@ -236,16 +236,25 @@ func (cli *CLI) init(ctx *cli.Context) error {
 	if ctx.GlobalBool("prtg") {
 		cli.Err, cli.Out = prtg.Err, prtg.Out
 	}
-	var err error
-	if cli.cred, err = cli.Store.Load(); err == nil {
-		cli.c, err = cli.Client(cli.cred.URL, cli.cred.User, cli.cred.Pass)
-	}
-	if err != nil {
-		cli.cred = &Creds{ctx.GlobalString("url"), ctx.String("user"), ctx.String("pass")}
-		if cli.c, err = cli.Client(cli.cred.URL, cli.cred.User, cli.cred.Pass); err != nil {
-			return err
-		}
-	}
+	var err, err2 error
+  
+  if ctx.IsSet("user") && ctx.IsSet("pass") {
+    cli.cred = &Creds{ctx.GlobalString("url"), ctx.String("user"), ctx.String("pass")}
+    if cli.c, err = cli.Client(cli.cred.URL, cli.cred.User, cli.cred.Pass); err != nil {
+		  if cli.cred, err2 = cli.Store.Load(); err2 == nil {
+		    cli.c, err = cli.Client(cli.cred.URL, cli.cred.User, cli.cred.Pass)
+        fmt.Println("WARNING: Authentification failed. Use valid credentials previously stored.")
+	    } else {
+        return err
+      }
+	  }
+  } else {
+    if cli.cred, err = cli.Store.Load(); err == nil {
+		  cli.c, err = cli.Client(cli.cred.URL, cli.cred.User, cli.cred.Pass)
+	  } else {
+      return err
+    }
+  }
 	cli.p = ctx.GlobalString("project")
 	a, s, o := ctx.GlobalString("agent"), ctx.GlobalString("stage"), ctx.GlobalString("output")
 	if cli.a, err = regexp.Compile(a); err != nil {
@@ -419,10 +428,6 @@ func (cli *CLI) Build(ctx *cli.Context) {
 // passed from command line. It fails in doing so, when given credentials are not
 // valid.
 func (cli *CLI) Login(ctx *cli.Context) {
-	if err := cli.init(ctx); err != nil {
-		cli.Err(err)
-		return
-	}
 	old := []*string{&cli.cred.URL, &cli.cred.User, &cli.cred.Pass}
 	for i, s := range []string{ctx.GlobalString("url"), ctx.String("user"), ctx.String("pass")} {
 		if s != "" {
