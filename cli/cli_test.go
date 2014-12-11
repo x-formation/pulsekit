@@ -258,6 +258,7 @@ func TestInit(t *testing.T) {
 
 func TestInitErr_ProjectRegex(t *testing.T) {
 	mc, mcli, f := fixture()
+  mc.Err = make([]error, 1)
 	f.Project = "("
 	out, err := mcli.Init()
 	mc.Check(t)
