@@ -22,6 +22,7 @@ type Flags struct {
 	Pass    string
 	Agent   string
 	Project string
+        Revision string
 	Timeout time.Duration
 	Build   int
 	Prtg    bool
@@ -31,7 +32,7 @@ type Flags struct {
 // set in pulsecli.New().
 func newFlags() *Flags {
 	return &Flags{
-		URL:     "http://pulse/xmlrpc",
+		URL:     "http://pulse",
 		Agent:   ".*",
 		Project: ".*",
 		Timeout: 15 * time.Second,
@@ -46,15 +47,19 @@ type MockCLI struct {
 }
 
 func (mcli *MockCLI) ctx() *cli.Context {
-	g := flag.NewFlagSet("pulsecli test", flag.PanicOnError)
-	g.String("addr", mcli.f.URL, "")
-	g.String("pass", mcli.f.Pass, "")
+	g := flag.NewFlagSet("global pulsecli test", flag.PanicOnError)
+	g.String("url", mcli.f.URL, "")
 	g.String("agent", mcli.f.Agent, "")
 	g.String("project", mcli.f.Project, "")
 	g.String("timeout", mcli.f.Timeout.String(), "")
 	g.Int("build", mcli.f.Build, "")
 	g.Bool("prtg", mcli.f.Prtg, "")
-	return cli.NewContext(mcli.cli.app, nil, g)
+
+        l := flag.NewFlagSet("local pulsecli test", flag.PanicOnError)
+        l.String("revision", mcli.f.Revision, "")
+        l.String("pass", mcli.f.Pass, "")
+
+	return cli.NewContext(mcli.cli.app, l, g)
 }
 
 func (mcli *MockCLI) Wait() (out []interface{}, err []interface{}) {
@@ -253,6 +258,7 @@ func TestInit(t *testing.T) {
 
 func TestInitErr_ProjectRegex(t *testing.T) {
 	mc, mcli, f := fixture()
+  mc.Err = make([]error, 1)
 	f.Project = "("
 	out, err := mcli.Init()
 	mc.Check(t)
