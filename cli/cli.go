@@ -92,17 +92,15 @@ func (fileStore) Save(c *Creds) error {
 	return err
 }
 
-func matchProjects(cli *CLI, list []string) []string {
-	mp := make([]string, 0)
+func (cli *CLI) matchProjects(list []string) (mp []string) {
 	for _, p := range list {
 		if cli.p == p {
 			mp = append(mp, p)
 		}
 	}
 	if len(mp) == 0 {
-		var err error
-		var rp *regexp.Regexp
-		if rp, err = regexp.Compile(cli.p); err != nil {
+		rp, err := regexp.Compile(cli.p)
+		if err != nil {
 			cli.Err(err)
 		}
 		for _, p := range list {
@@ -368,7 +366,7 @@ func (cli *CLI) Init(ctx *cli.Context) {
 		return
 	}
 	msg := make([]interface{}, 0, len(p))
-	for _, p := range matchProjects(cli, p) {
+	for _, p := range cli.matchProjects(p) {
 		ok, err := cli.c.Init(p)
 		if err != nil {
 			cli.Err(err)
@@ -454,7 +452,7 @@ func (cli *CLI) Clean(ctx *cli.Context) {
 	}
 	p, err := cli.c.Projects()
 	msg := make([]interface{}, 0, len(p))
-	for _, p := range matchProjects(cli, p) {
+	for _, p := range cli.matchProjects(p) {
 		if err = cli.c.Clear(p); err != nil {
 			cli.Err(err)
 			return
@@ -478,7 +476,7 @@ func (cli *CLI) Trigger(ctx *cli.Context) {
 		return
 	}
 	msg := make([]interface{}, 0, len(p))
-	for _, p := range matchProjects(cli, p) {
+	for _, p := range cli.matchProjects(p) {
 		if err = cli.c.Clear(p); err != nil {
 			cli.Err(err)
 			return
@@ -523,7 +521,7 @@ func (cli *CLI) healthProject(ctx *cli.Context) {
 		return
 	}
 	all := make(map[string]pulse.Messages)
-	for _, p := range matchProjects(cli, p) {
+	for _, p := range cli.matchProjects(p) {
 		id, err := util.NormalizeBuildOrRequestID(cli.c, p, cli.n)
 		if err != nil {
 			if err.(*pulse.InvalidBuildError).Status == pulse.BuildNeverBuilt {
@@ -636,7 +634,7 @@ func (cli *CLI) Status(ctx *cli.Context) {
 		return
 	}
 	m := make(map[string][]pulse.BuildResult)
-	for _, p := range matchProjects(cli, p) {
+	for _, p := range cli.matchProjects(p) {
 		id, err := util.NormalizeBuildOrRequestID(cli.c, p, cli.n)
 		if err != nil {
 			cli.Err(err)
@@ -679,7 +677,7 @@ func (cli *CLI) Artifact(ctx *cli.Context) {
 	}
 	var build int64
 	dir, url := cli.o.String(), cli.cred.URL
-	for _, p := range matchProjects(cli, projects) {
+	for _, p := range cli.matchProjects(projects) {
 		if build, err = util.NormalizeBuildOrRequestID(cli.c, p, cli.n); err != nil {
 			cli.Err(err)
 			return
