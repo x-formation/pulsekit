@@ -13,6 +13,7 @@ install:
  - go version
  - go get code.google.com/p/go.tools/cmd/vet
  - go get -v -t ./...
+ - type NUL > "%HOMEDRIVE%%HOMEPATH%"\.pulsecli 
 
 build_script:
  - go tool vet -all .
